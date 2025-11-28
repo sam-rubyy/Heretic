@@ -1,4 +1,5 @@
 using System.Collections.Generic;
+using System.Linq;
 using UnityEngine;
 
 [DisallowMultipleComponent]
@@ -6,10 +7,12 @@ public class ItemManager : MonoBehaviour
 {
     #region Fields
     [SerializeField] private List<ItemBase> collectedItems = new List<ItemBase>();
+    [SerializeField] private PlayerStats playerStats;
     #endregion
 
     #region Properties
     public IReadOnlyList<ItemBase> CollectedItems => collectedItems;
+    public PlayerStats PlayerStats => playerStats;
     #endregion
 
     #region Public Methods
@@ -21,6 +24,7 @@ public class ItemManager : MonoBehaviour
         }
 
         collectedItems.Add(item);
+        ApplyPlayerStatModifier(item);
         item.OnCollected(collector);
     }
 
@@ -31,15 +35,15 @@ public class ItemManager : MonoBehaviour
             return;
         }
 
+        RemovePlayerStatModifier(item);
         collectedItems.Remove(item);
         item.OnRemoved(collector);
     }
 
     public ShotParams ApplyShotModifiers(ShotParams shotParams)
     {
-        for (int i = 0; i < collectedItems.Count; i++)
+        foreach (var item in GetOrderedItems())
         {
-            var item = collectedItems[i];
             if (item is IShotModifier modifier)
             {
                 shotParams = modifier.ModifyShot(shotParams);
@@ -51,9 +55,8 @@ public class ItemManager : MonoBehaviour
 
     public BulletParams ApplyBulletModifiers(BulletParams bulletParams)
     {
-        for (int i = 0; i < collectedItems.Count; i++)
+        foreach (var item in GetOrderedItems())
         {
-            var item = collectedItems[i];
             if (item is IBulletModifier modifier)
             {
                 bulletParams = modifier.ModifyBullet(bulletParams);
@@ -61,6 +64,40 @@ public class ItemManager : MonoBehaviour
         }
 
         return bulletParams;
+    }
+    #endregion
+
+    #region Private Methods
+    private IEnumerable<ItemBase> GetOrderedItems()
+    {
+        return collectedItems
+            .OrderBy(item => (item as IItemModifierPriority)?.Priority ?? 0);
+    }
+
+    private void ApplyPlayerStatModifier(ItemBase item)
+    {
+        if (playerStats == null)
+        {
+            return;
+        }
+
+        if (item is IPlayerStatModifier statModifier)
+        {
+            statModifier.Apply(playerStats);
+        }
+    }
+
+    private void RemovePlayerStatModifier(ItemBase item)
+    {
+        if (playerStats == null)
+        {
+            return;
+        }
+
+        if (item is IPlayerStatModifier statModifier)
+        {
+            statModifier.Remove(playerStats);
+        }
     }
     #endregion
 }

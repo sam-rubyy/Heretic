@@ -9,6 +9,7 @@ public class WeaponBase : MonoBehaviour
     [SerializeField] private Transform firePoint;
     [SerializeField] private Bullet bulletPrefab;
     [SerializeField] private ItemManager itemManager;
+    [SerializeField] private PlayerStats playerStats;
     private AttackCooldown attackCooldown;
     private Coroutine burstRoutine;
     private bool isBursting;
@@ -30,6 +31,9 @@ public class WeaponBase : MonoBehaviour
 
     public virtual void HandleAttack()
     {
+        UpdateCooldownFromStats();
+        Vector2 direction = firePoint != null ? (Vector2)firePoint.right : (Vector2)transform.right;
+        HandleAttack(direction);
     }
 
     public virtual void HandleAttack(Vector2 direction)
@@ -38,6 +42,8 @@ public class WeaponBase : MonoBehaviour
         {
             return;
         }
+
+        UpdateCooldownFromStats();
 
         if (!CanFire())
         {
@@ -72,6 +78,8 @@ public class WeaponBase : MonoBehaviour
 
     public virtual void Reload()
     {
+        InitializeCooldown();
+        attackCooldown?.Reset();
     }
 
     public bool CanFire()
@@ -81,6 +89,7 @@ public class WeaponBase : MonoBehaviour
             return false;
         }
 
+        UpdateCooldownFromStats();
         return attackCooldown == null || attackCooldown.IsReady();
     }
     #endregion
@@ -94,6 +103,11 @@ public class WeaponBase : MonoBehaviour
 
     private ShotParams GetModifiedShotParams(ShotParams baseParams)
     {
+        if (playerStats != null)
+        {
+            baseParams = playerStats.ModifyShot(baseParams);
+        }
+
         if (itemManager == null)
         {
             return baseParams;
@@ -104,6 +118,11 @@ public class WeaponBase : MonoBehaviour
 
     private BulletParams GetModifiedBulletParams(BulletParams baseParams)
     {
+        if (playerStats != null)
+        {
+            baseParams = playerStats.ModifyBullet(baseParams);
+        }
+
         if (itemManager == null)
         {
             return baseParams;
@@ -119,8 +138,10 @@ public class WeaponBase : MonoBehaviour
             return 0f;
         }
 
+        var finalShotParams = GetModifiedShotParams(weaponData.ShotParameters);
+
         // Treat fireRate as shots per second; cooldown is its inverse.
-        float fireRate = weaponData.ShotParameters.fireRate;
+        float fireRate = finalShotParams.fireRate;
         if (fireRate <= 0f)
         {
             return 0f;
@@ -164,6 +185,17 @@ public class WeaponBase : MonoBehaviour
         attackCooldown?.Reset();
         burstRoutine = null;
         isBursting = false;
+    }
+
+    private void UpdateCooldownFromStats()
+    {
+        if (attackCooldown == null)
+        {
+            InitializeCooldown();
+            return;
+        }
+
+        attackCooldown.SetCooldown(GetShotCooldownSeconds());
     }
     #endregion
 }

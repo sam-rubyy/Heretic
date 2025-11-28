@@ -20,14 +20,25 @@ public class EnemyBase : MonoBehaviour
     #region Public Methods
     public virtual void Initialize()
     {
+        if (health == null)
+        {
+            health = GetComponent<EnemyHealth>();
+        }
+
+        if (health != null)
+        {
+            health.ResetHealth();
+        }
     }
 
     public virtual void OnSpawned()
     {
+        gameObject.SetActive(true);
     }
 
     public virtual void OnDeath()
     {
+        Destroy(gameObject);
     }
     #endregion
 }

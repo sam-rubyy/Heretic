@@ -56,7 +56,37 @@ public class BulletController : MonoBehaviour
 
     private void HandleCollision(Collider2D other)
     {
+        if (bullet == null)
+        {
+            return;
+        }
+
+        ApplyDamage(other);
         ProcessOnHitEffects(other);
+
+        Destroy(gameObject);
+    }
+
+    private void ApplyDamage(Collider2D other)
+    {
+        if (!other.TryGetComponent<EnemyHealth>(out var enemyHealth))
+        {
+            return;
+        }
+
+        BulletParams bulletParams = bullet.GetParameters();
+        enemyHealth.TakeDamage(bulletParams.damage);
+
+        if (bulletParams.knockback > 0f && other.attachedRigidbody != null)
+        {
+            Vector2 direction = bullet.GetMoveDirection();
+            if (direction.sqrMagnitude < 0.001f)
+            {
+                direction = transform.right;
+            }
+
+            other.attachedRigidbody.AddForce(direction.normalized * bulletParams.knockback, ForceMode2D.Impulse);
+        }
     }
 
     private void ProcessOnHitEffects(Collider2D other)

@@ -34,7 +34,7 @@ public struct ShotParams
 public struct BulletParams
 {
     [Header("Stats")]
-    public int damage;
+    public float damage;
     public float speed;
     public float lifetime;
     public float knockback;

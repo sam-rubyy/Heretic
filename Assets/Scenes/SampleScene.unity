@@ -137,6 +137,7 @@ GameObject:
   - component: {fileID: 96657930}
   - component: {fileID: 96657929}
   - component: {fileID: 96657932}
+  - component: {fileID: 96657933}
   m_Layer: 0
   m_Name: Player
   m_TagString: Untagged
@@ -269,6 +270,7 @@ MonoBehaviour:
   m_Name: 
   m_EditorClassIdentifier: 
   collectedItems: []
+  playerStats: {fileID: 96657933}
 --- !u!50 &96657932
 Rigidbody2D:
   serializedVersion: 4
@@ -296,6 +298,31 @@ Rigidbody2D:
   m_SleepingMode: 1
   m_CollisionDetection: 0
   m_Constraints: 0
+--- !u!114 &96657933
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 96657924}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 16ee1331576e3c8689d412f3bc7c3897, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: 
+  fireRateMultiplier: 1
+  fireRateBonus: 0
+  burstCountBonus: 0
+  spreadAngleBonus: 0
+  projectilesPerShotBonus: 0
+  maxRangeBonus: 0
+  damageMultiplier: 1
+  damageBonus: 0
+  speedMultiplier: 1
+  speedBonus: 0
+  lifetimeBonus: 0
+  knockbackMultiplier: 1
+  knockbackBonus: 0
 --- !u!1 &519420028
 GameObject:
   m_ObjectHideFlags: 0
@@ -559,6 +586,7 @@ MonoBehaviour:
   firePoint: {fileID: 1232837446}
   bulletPrefab: {fileID: 4990963897180891873, guid: 7f3c0b6b348659ca8995052d85f95983, type: 3}
   itemManager: {fileID: 96657930}
+  playerStats: {fileID: 96657933}
 --- !u!4 &1759782493
 Transform:
   m_ObjectHideFlags: 0
