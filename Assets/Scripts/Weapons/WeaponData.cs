@@ -19,6 +19,8 @@ public struct ShotParams
 {
     [Header("Timing")]
     public float fireRate;
+    public int burstCount;
+    public float burstInterval;
 
     [Header("Spread")]
     public float spreadAngle;
@@ -36,4 +38,17 @@ public struct BulletParams
     public float speed;
     public float lifetime;
     public float knockback;
+
+    [Header("On Hit Effects")]
+    public StatusEffectParams[] onHitEffects;
+}
+
+[System.Serializable]
+public struct StatusEffectParams
+{
+    [Tooltip("Unique identifier for the status effect, e.g. Burning, Freeze.")]
+    public string effectId;
+    [Range(0f, 1f)] public float chance;
+    public float duration;
+    public float intensity;
 }

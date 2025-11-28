@@ -6,6 +6,7 @@ public class Bullet : MonoBehaviour
     #region Fields
     [SerializeField] private BulletParams bulletParameters;
     private BulletController controller;
+    private Vector2 moveDirection = Vector2.right;
     #endregion
 
     #region Unity Methods
@@ -19,6 +20,30 @@ public class Bullet : MonoBehaviour
     public void Initialize(BulletParams parameters)
     {
         bulletParameters = parameters;
+    }
+
+    public void Initialize(BulletParams parameters, Vector2 direction)
+    {
+        bulletParameters = parameters;
+        if (direction.sqrMagnitude > 0.001f)
+        {
+            moveDirection = direction.normalized;
+        }
+    }
+
+    public StatusEffectParams[] GetOnHitEffects()
+    {
+        return bulletParameters.onHitEffects;
+    }
+
+    public BulletParams GetParameters()
+    {
+        return bulletParameters;
+    }
+
+    public Vector2 GetMoveDirection()
+    {
+        return moveDirection;
     }
     #endregion
 }
