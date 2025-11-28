@@ -8,6 +8,7 @@ public class BulletController : MonoBehaviour
     [SerializeField] private Bullet bullet;
     private float lifetimeTimer;
     private float distanceTraveled;
+    private float travelEffectTimer;
     #endregion
 
     #region Unity Methods
@@ -22,6 +23,7 @@ public class BulletController : MonoBehaviour
     private void Update()
     {
         HandleMovement();
+        HandleTravelEffects();
         HandleLifetime();
     }
 
@@ -62,6 +64,20 @@ public class BulletController : MonoBehaviour
         var effects = bullet.GetOnHitEffects();
 
         // Intentionally left blank for future effect application logic (e.g., chance-based burning).
+    }
+
+    private void HandleTravelEffects()
+    {
+        var effects = bullet.GetOnTravelEffects();
+        if (effects == null || effects.Length == 0)
+        {
+            return;
+        }
+
+        travelEffectTimer += Time.deltaTime;
+
+        // Intentionally left blank for future travel effect logic (e.g., fire trails at tickInterval).
+        // Use travelEffectTimer with each effect's tickInterval to decide when to apply.
     }
 
     private void HandleLifetime()

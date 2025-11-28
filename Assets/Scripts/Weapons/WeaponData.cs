@@ -41,6 +41,9 @@ public struct BulletParams
 
     [Header("On Hit Effects")]
     public StatusEffectParams[] onHitEffects;
+
+    [Header("On Travel Effects")]
+    public TravelEffectParams[] onTravelEffects;
 }
 
 [System.Serializable]
@@ -50,5 +53,15 @@ public struct StatusEffectParams
     public string effectId;
     [Range(0f, 1f)] public float chance;
     public float duration;
+    public float intensity;
+}
+
+[System.Serializable]
+public struct TravelEffectParams
+{
+    [Tooltip("Unique identifier for the travel effect, e.g. FireTrail.")]
+    public string effectId;
+    [Range(0f, 1f)] public float chance;
+    public float tickInterval;
     public float intensity;
 }

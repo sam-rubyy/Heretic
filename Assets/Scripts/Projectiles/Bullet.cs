@@ -31,19 +31,12 @@ public class Bullet : MonoBehaviour
         }
     }
 
-    public StatusEffectParams[] GetOnHitEffects()
-    {
-        return bulletParameters.onHitEffects;
-    }
+    public StatusEffectParams[] GetOnHitEffects() => bulletParameters.onHitEffects;
 
-    public BulletParams GetParameters()
-    {
-        return bulletParameters;
-    }
+    public TravelEffectParams[] GetOnTravelEffects() => bulletParameters.onTravelEffects;
 
-    public Vector2 GetMoveDirection()
-    {
-        return moveDirection;
-    }
+    public BulletParams GetParameters() => bulletParameters;
+
+    public Vector2 GetMoveDirection() => moveDirection;
     #endregion
 }
