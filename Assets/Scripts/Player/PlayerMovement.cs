@@ -8,6 +8,10 @@ public class PlayerMovement : MonoBehaviour
     [SerializeField] private Rigidbody2D body;
     [SerializeField] private bool useRawInput = true;
 
+    // Only used for interaction now
+    [SerializeField] private LayerMask interactableLayer;   // NPC layer
+    [SerializeField] private float interactRadius = 1f;
+
     private Vector2 movementInput;
     private Vector2 lastLookDirection = Vector2.right;
     private bool noInput;
@@ -17,34 +21,34 @@ public class PlayerMovement : MonoBehaviour
 
     private void Awake()
     {
-        // Rigidbody
         if (body == null)
             body = GetComponent<Rigidbody2D>();
 
-        // Animator
         animator = GetComponent<Animator>();
-
-        // Sprite renderer (for left/right flipping)
         spriteRenderer = GetComponent<SpriteRenderer>();
     }
 
     private void Update()
     {
-        // detect if player is moving
         noInput = movementInput == Vector2.zero;
 
-        // update animator parameters
         animator.SetBool("noInput", noInput);
         animator.SetFloat("Blend", movementInput.sqrMagnitude);
 
-        // ⭐ Flip the character left/right
+        // flip left / right
         if (movementInput.x > 0.01f)
-            spriteRenderer.flipX = false;  // face right
+            spriteRenderer.flipX = false;
         else if (movementInput.x < -0.01f)
-            spriteRenderer.flipX = true;   // face left
+            spriteRenderer.flipX = true;
 
         if (useRawInput)
             PollRawInput();
+
+        // Press E to interact with NPC
+        if (Keyboard.current != null && Keyboard.current.eKey.wasPressedThisFrame)
+        {
+            TryInteract();
+        }
 
         UpdateLookDirection();
     }
@@ -86,8 +90,6 @@ public class PlayerMovement : MonoBehaviour
             if (keyboard.wKey.isPressed) y += 1;
 
             Vector2 k = new Vector2(x, y);
-
-            // pick whichever is stronger (gamepad vs keyboard)
             if (k.sqrMagnitude > input.sqrMagnitude)
                 input = k;
         }
@@ -97,29 +99,68 @@ public class PlayerMovement : MonoBehaviour
 
     private void HandleMovement()
     {
-        var input = movementInput;
+        Vector2 input = movementInput;
 
         if (input.sqrMagnitude > 1f)
             input = input.normalized;
 
         Vector2 velocity = input * moveSpeed;
+        Vector2 targetPos = body.position + velocity * Time.fixedDeltaTime;
 
-        if (body != null)
+        // ⭐ BLOCK ANY SOLID COLLIDER (non-trigger)
+        if (IsBlocked(targetPos))
         {
-            if (body.bodyType == RigidbodyType2D.Dynamic)
-                body.velocity = velocity;
-            else
-                body.MovePosition(body.position + velocity * Time.fixedDeltaTime);
-
+            body.velocity = Vector2.zero;
             return;
         }
 
-        transform.position += (Vector3)(velocity * Time.fixedDeltaTime);
+        if (body.bodyType == RigidbodyType2D.Dynamic)
+            body.velocity = velocity;
+        else
+            body.MovePosition(targetPos);
+    }
+
+    private bool IsBlocked(Vector2 targetPos)
+    {
+        // Size of the player's hitbox for checking collisions
+        Vector2 boxSize = new Vector2(0.8f, 0.8f);
+
+        // Check if we would overlap ANY collider at targetPos
+        Collider2D hit = Physics2D.OverlapBox(targetPos, boxSize, 0f);
+
+        // Block only if we hit a non-trigger collider
+        return hit != null && !hit.isTrigger;
+    }
+
+    private void TryInteract()
+    {
+        // Check for NPCs in a circle around the player
+        Collider2D hit = Physics2D.OverlapCircle(
+            transform.position,
+            interactRadius,
+            interactableLayer
+        );
+
+        if (hit != null)
+        {
+            Debug.Log("NPC detected: " + hit.name);
+        }
+        else
+        {
+            Debug.Log("No NPC nearby.");
+        }
     }
 
     private void UpdateLookDirection()
     {
         if (movementInput.sqrMagnitude > 0.001f)
             lastLookDirection = movementInput.normalized;
+    }
+
+    // Just to see the interaction radius in Scene view (optional)
+    private void OnDrawGizmosSelected()
+    {
+        Gizmos.color = Color.yellow;
+        Gizmos.DrawWireSphere(transform.position, interactRadius);
     }
 }
