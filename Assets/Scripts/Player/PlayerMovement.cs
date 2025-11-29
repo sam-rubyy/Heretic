@@ -1,32 +1,50 @@
-using UnityEngine;
+﻿using UnityEngine;
 using UnityEngine.InputSystem;
 
 [DisallowMultipleComponent]
 public class PlayerMovement : MonoBehaviour
 {
-    #region Fields
     [SerializeField] private float moveSpeed = 5f;
     [SerializeField] private Rigidbody2D body;
     [SerializeField] private bool useRawInput = true;
+
     private Vector2 movementInput;
     private Vector2 lastLookDirection = Vector2.right;
-    #endregion
+    private bool noInput;
 
-    #region Unity Methods
+    private Animator animator;
+    private SpriteRenderer spriteRenderer;
+
     private void Awake()
     {
+        // Rigidbody
         if (body == null)
-        {
             body = GetComponent<Rigidbody2D>();
-        }
+
+        // Animator
+        animator = GetComponent<Animator>();
+
+        // Sprite renderer (for left/right flipping)
+        spriteRenderer = GetComponent<SpriteRenderer>();
     }
 
     private void Update()
     {
+        // detect if player is moving
+        noInput = movementInput == Vector2.zero;
+
+        // update animator parameters
+        animator.SetBool("noInput", noInput);
+        animator.SetFloat("Blend", movementInput.sqrMagnitude);
+
+        // ⭐ Flip the character left/right
+        if (movementInput.x > 0.01f)
+            spriteRenderer.flipX = false;  // face right
+        else if (movementInput.x < -0.01f)
+            spriteRenderer.flipX = true;   // face left
+
         if (useRawInput)
-        {
             PollRawInput();
-        }
 
         UpdateLookDirection();
     }
@@ -35,58 +53,43 @@ public class PlayerMovement : MonoBehaviour
     {
         HandleMovement();
     }
-    #endregion
-
-    #region Public Methods
-    public void SetMovementInput(Vector2 input)
-    {
-        movementInput = input;
-    }
-
-    public Vector2 GetLastLookDirection()
-    {
-        return lastLookDirection;
-    }
 
     public void OnMove(InputAction.CallbackContext context)
     {
         SetMovementInput(context.ReadValue<Vector2>());
 
         if (context.canceled)
-        {
             SetMovementInput(Vector2.zero);
-        }
     }
-    #endregion
 
-    #region Private Methods
+    private void SetMovementInput(Vector2 input)
+    {
+        movementInput = input;
+    }
+
     private void PollRawInput()
     {
         Vector2 input = Vector2.zero;
 
         var gamepad = Gamepad.current;
         if (gamepad != null)
-        {
             input = gamepad.leftStick.ReadValue();
-        }
 
         var keyboard = Keyboard.current;
         if (keyboard != null)
         {
-            float x = 0f;
-            float y = 0f;
+            float x = 0, y = 0;
 
-            if (keyboard.aKey.isPressed) x -= 1f;
-            if (keyboard.dKey.isPressed) x += 1f;
-            if (keyboard.sKey.isPressed) y -= 1f;
-            if (keyboard.wKey.isPressed) y += 1f;
+            if (keyboard.aKey.isPressed) x -= 1;
+            if (keyboard.dKey.isPressed) x += 1;
+            if (keyboard.sKey.isPressed) y -= 1;
+            if (keyboard.wKey.isPressed) y += 1;
 
-            var keyboardInput = new Vector2(x, y);
+            Vector2 k = new Vector2(x, y);
 
-            if (keyboardInput.sqrMagnitude > input.sqrMagnitude)
-            {
-                input = keyboardInput;
-            }
+            // pick whichever is stronger (gamepad vs keyboard)
+            if (k.sqrMagnitude > input.sqrMagnitude)
+                input = k;
         }
 
         SetMovementInput(input);
@@ -97,23 +100,17 @@ public class PlayerMovement : MonoBehaviour
         var input = movementInput;
 
         if (input.sqrMagnitude > 1f)
-        {
             input = input.normalized;
-        }
 
-        var velocity = input * moveSpeed;
+        Vector2 velocity = input * moveSpeed;
 
         if (body != null)
         {
             if (body.bodyType == RigidbodyType2D.Dynamic)
-            {
                 body.velocity = velocity;
-            }
             else
-            {
-                var targetPosition = body.position + velocity * Time.fixedDeltaTime;
-                body.MovePosition(targetPosition);
-            }
+                body.MovePosition(body.position + velocity * Time.fixedDeltaTime);
+
             return;
         }
 
@@ -123,9 +120,6 @@ public class PlayerMovement : MonoBehaviour
     private void UpdateLookDirection()
     {
         if (movementInput.sqrMagnitude > 0.001f)
-        {
             lastLookDirection = movementInput.normalized;
-        }
     }
-    #endregion
 }

@@ -16,8 +16,8 @@ MonoBehaviour:
     fireRate: 1.66
     burstCount: 0
     burstInterval: 0
-    spreadAngle: 0
-    projectilesPerShot: 0
+    spreadAngle: 30
+    projectilesPerShot: 5
     maxRange: 4
   bulletParameters:
     damage: 5
@@ -25,3 +25,4 @@ MonoBehaviour:
     lifetime: 10
     knockback: 2
     onHitEffects: []
+    onTravelEffects: []
