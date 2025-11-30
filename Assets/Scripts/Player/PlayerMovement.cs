@@ -3,10 +3,13 @@ using UnityEngine.InputSystem;
 
 [DisallowMultipleComponent]
 public class PlayerMovement : MonoBehaviour
+    , IKnockbackReceiver
 {
     [SerializeField] private float moveSpeed = 5f;
     [SerializeField] private Rigidbody2D body;
-    [SerializeField] private bool useRawInput = true;
+    [SerializeField] private float accelerationTime = 0.08f;
+    [SerializeField] private float decelerationTime = 0.1f;
+    [SerializeField] private float knockbackDamping = 12f;
 
     // Only used for interaction now
     [SerializeField] private LayerMask interactableLayer;   // NPC layer
@@ -15,9 +18,14 @@ public class PlayerMovement : MonoBehaviour
     private Vector2 movementInput;
     private Vector2 lastLookDirection = Vector2.right;
     private bool noInput;
+    private Vector2 smoothedVelocity;
+    private Vector2 smoothVelocityRef;
+    private Vector2 knockbackVelocity;
 
     private Animator animator;
     private SpriteRenderer spriteRenderer;
+    private global::InputSystem inputActions;
+    private global::InputSystem.PlayerActions playerActions;
 
     private void Awake()
     {
@@ -26,6 +34,29 @@ public class PlayerMovement : MonoBehaviour
 
         animator = GetComponent<Animator>();
         spriteRenderer = GetComponent<SpriteRenderer>();
+
+        inputActions = new global::InputSystem();
+        playerActions = inputActions.Player;
+    }
+
+    private void OnEnable()
+    {
+        playerActions.Enable();
+        playerActions.Movement.performed += OnMovementAction;
+        playerActions.Movement.canceled += OnMovementAction;
+    }
+
+    private void OnDisable()
+    {
+        playerActions.Movement.performed -= OnMovementAction;
+        playerActions.Movement.canceled -= OnMovementAction;
+        playerActions.Disable();
+    }
+
+    private void OnDestroy()
+    {
+        playerActions.Disable();
+        inputActions.Dispose();
     }
 
     private void Update()
@@ -33,16 +64,13 @@ public class PlayerMovement : MonoBehaviour
         noInput = movementInput == Vector2.zero;
 
         animator.SetBool("noInput", noInput);
-        animator.SetFloat("Blend", movementInput.sqrMagnitude);
+        // animator.SetFloat("Blend", movementInput.sqrMagnitude);
 
         // flip left / right
         if (movementInput.x > 0.01f)
             spriteRenderer.flipX = false;
         else if (movementInput.x < -0.01f)
             spriteRenderer.flipX = true;
-
-        if (useRawInput)
-            PollRawInput();
 
         // Press E to interact with NPC
         if (Keyboard.current != null && Keyboard.current.eKey.wasPressedThisFrame)
@@ -66,35 +94,14 @@ public class PlayerMovement : MonoBehaviour
             SetMovementInput(Vector2.zero);
     }
 
+    private void OnMovementAction(InputAction.CallbackContext context)
+    {
+        OnMove(context);
+    }
+
     private void SetMovementInput(Vector2 input)
     {
         movementInput = input;
-    }
-
-    private void PollRawInput()
-    {
-        Vector2 input = Vector2.zero;
-
-        var gamepad = Gamepad.current;
-        if (gamepad != null)
-            input = gamepad.leftStick.ReadValue();
-
-        var keyboard = Keyboard.current;
-        if (keyboard != null)
-        {
-            float x = 0, y = 0;
-
-            if (keyboard.aKey.isPressed) x -= 1;
-            if (keyboard.dKey.isPressed) x += 1;
-            if (keyboard.sKey.isPressed) y -= 1;
-            if (keyboard.wKey.isPressed) y += 1;
-
-            Vector2 k = new Vector2(x, y);
-            if (k.sqrMagnitude > input.sqrMagnitude)
-                input = k;
-        }
-
-        SetMovementInput(input);
     }
 
     private void HandleMovement()
@@ -104,20 +111,45 @@ public class PlayerMovement : MonoBehaviour
         if (input.sqrMagnitude > 1f)
             input = input.normalized;
 
-        Vector2 velocity = input * moveSpeed;
-        Vector2 targetPos = body.position + velocity * Time.fixedDeltaTime;
+        float smoothTime = input.sqrMagnitude > 0.001f ? accelerationTime : decelerationTime;
+        smoothedVelocity = Vector2.SmoothDamp(smoothedVelocity, input * moveSpeed, ref smoothVelocityRef, smoothTime);
 
-        // ⭐ BLOCK ANY SOLID COLLIDER (non-trigger)
-        if (IsBlocked(targetPos))
+        // Apply knockback decay
+        knockbackVelocity = Vector2.MoveTowards(knockbackVelocity, Vector2.zero, knockbackDamping * Time.fixedDeltaTime);
+
+        Vector2 moveDelta = (smoothedVelocity + knockbackVelocity) * Time.fixedDeltaTime;
+        Vector2 nextPos = body.position;
+
+        if (Mathf.Abs(moveDelta.x) > Mathf.Epsilon)
         {
-            body.velocity = Vector2.zero;
-            return;
+            Vector2 attempt = nextPos + new Vector2(moveDelta.x, 0f);
+            if (!IsBlocked(attempt))
+                nextPos = attempt;
+            else
+            {
+                smoothedVelocity.x = 0f;
+                smoothVelocityRef.x = 0f;
+            }
         }
 
+        if (Mathf.Abs(moveDelta.y) > Mathf.Epsilon)
+        {
+            Vector2 attempt = nextPos + new Vector2(0f, moveDelta.y);
+            if (!IsBlocked(attempt))
+                nextPos = attempt;
+            else
+            {
+                smoothedVelocity.y = 0f;
+                smoothVelocityRef.y = 0f;
+            }
+        }
+
+        Vector2 finalVelocity = (nextPos - body.position) / Time.fixedDeltaTime;
+
         if (body.bodyType == RigidbodyType2D.Dynamic)
-            body.velocity = velocity;
+            body.velocity = finalVelocity;
         else
-            body.MovePosition(targetPos);
+            body.MovePosition(nextPos);
     }
 
     private bool IsBlocked(Vector2 targetPos)
@@ -125,11 +157,26 @@ public class PlayerMovement : MonoBehaviour
         // Size of the player's hitbox for checking collisions
         Vector2 boxSize = new Vector2(0.8f, 0.8f);
 
-        // Check if we would overlap ANY collider at targetPos
-        Collider2D hit = Physics2D.OverlapBox(targetPos, boxSize, 0f);
+        Collider2D[] hits = Physics2D.OverlapBoxAll(targetPos, boxSize, 0f);
 
-        // Block only if we hit a non-trigger collider
-        return hit != null && !hit.isTrigger;
+        for (int i = 0; i < hits.Length; i++)
+        {
+            var hit = hits[i];
+            if (hit == null || hit.isTrigger)
+                continue;
+
+            // Ignore ourselves and other characters so we don't get glued when overlapping.
+            if (hit.attachedRigidbody == body)
+                continue;
+            if (hit.CompareTag("Player"))
+                continue;
+            if (hit.GetComponent<EnemyBase>() != null || hit.CompareTag("Enemy"))
+                continue;
+
+            return true;
+        }
+
+        return false;
     }
 
     private void TryInteract()
@@ -155,6 +202,17 @@ public class PlayerMovement : MonoBehaviour
     {
         if (movementInput.sqrMagnitude > 0.001f)
             lastLookDirection = movementInput.normalized;
+    }
+
+    public void ApplyKnockback(Vector2 direction, float force)
+    {
+        if (force <= 0f)
+            return;
+
+        if (direction.sqrMagnitude < 0.0001f)
+            direction = Vector2.right;
+
+        knockbackVelocity += direction.normalized * force;
     }
 
     // Just to see the interaction radius in Scene view (optional)

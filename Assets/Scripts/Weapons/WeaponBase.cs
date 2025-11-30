@@ -10,6 +10,7 @@ public class WeaponBase : MonoBehaviour
     [SerializeField] private Bullet bulletPrefab;
     [SerializeField] private ItemManager itemManager;
     [SerializeField] private PlayerStats playerStats;
+    [SerializeField] private BulletOwner bulletOwner = BulletOwner.Player;
     private AttackCooldown attackCooldown;
     private Coroutine burstRoutine;
     private bool isBursting;
@@ -164,6 +165,7 @@ public class WeaponBase : MonoBehaviour
             Quaternion rotation = Quaternion.Euler(0f, 0f, finalAngle);
 
             Bullet bulletInstance = Instantiate(bulletPrefab, firePoint.position, rotation);
+            bulletInstance.SetOwner(bulletOwner);
             bulletInstance.Initialize(bulletParams, rotation * Vector2.right);
         }
     }

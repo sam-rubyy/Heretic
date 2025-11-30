@@ -61,39 +61,106 @@ public class BulletController : MonoBehaviour
             return;
         }
 
-        ApplyDamage(other);
-        ProcessOnHitEffects(other);
+        bool hitEnemy;
+        bool shouldDestroy = ApplyDamage(other, out hitEnemy);
 
-        Destroy(gameObject);
+        if (hitEnemy)
+        {
+            ProcessOnHitEffects(other);
+        }
+
+        if (shouldDestroy)
+        {
+            Destroy(gameObject);
+        }
     }
 
-    private void ApplyDamage(Collider2D other)
+    private bool ApplyDamage(Collider2D other, out bool hitEnemy)
     {
-        if (!other.TryGetComponent<EnemyHealth>(out var enemyHealth))
+        hitEnemy = false;
+
+        if (bullet == null)
         {
-            return;
+            return false;
         }
 
-        BulletParams bulletParams = bullet.GetParameters();
-        enemyHealth.TakeDamage(bulletParams.damage);
+        BulletOwner owner = bullet.GetOwner();
 
-        if (bulletParams.knockback > 0f && other.attachedRigidbody != null)
+        var playerHealth = other.GetComponentInParent<PlayerHealth>();
+        if (playerHealth != null)
         {
-            Vector2 direction = bullet.GetMoveDirection();
-            if (direction.sqrMagnitude < 0.001f)
+            if (owner == BulletOwner.Player)
             {
-                direction = transform.right;
+                return false; // Ignore friendly fire on the player.
             }
 
-            other.attachedRigidbody.AddForce(direction.normalized * bulletParams.knockback, ForceMode2D.Impulse);
+            BulletParams bulletParams = bullet.GetParameters();
+            Vector2 sourcePos = transform.position;
+            playerHealth.TakeDamage(Mathf.RoundToInt(bulletParams.damage), sourcePos, bulletParams.knockback);
+            return true;
         }
+
+        var enemyHealth = other.GetComponentInParent<EnemyHealth>();
+        if (enemyHealth != null)
+        {
+            if (owner == BulletOwner.Enemy)
+            {
+                return false; // Ignore enemy bullets hitting enemies.
+            }
+
+            BulletParams bulletParams = bullet.GetParameters();
+            Vector2 sourcePos = transform.position;
+
+            enemyHealth.TakeDamage(bulletParams.damage);
+            enemyHealth.ApplyKnockback(sourcePos, bulletParams.knockback);
+
+            if (bulletParams.knockback > 0f && other.attachedRigidbody != null && !other.TryGetComponent<IKnockbackReceiver>(out _))
+            {
+                Vector2 direction = bullet.GetMoveDirection();
+                if (direction.sqrMagnitude < 0.001f)
+                {
+                    direction = transform.right;
+                }
+
+                other.attachedRigidbody.AddForce(direction.normalized * bulletParams.knockback, ForceMode2D.Impulse);
+            }
+
+            hitEnemy = true;
+            return true;
+        }
+
+        // Hit environment or unknown target: destroy the bullet to avoid endless travel.
+        return true;
     }
 
     private void ProcessOnHitEffects(Collider2D other)
     {
         var effects = bullet.GetOnHitEffects();
 
-        // Intentionally left blank for future effect application logic (e.g., chance-based burning).
+        if (effects == null || effects.Length == 0)
+        {
+            return;
+        }
+
+        var enemyHealth = other.GetComponentInParent<EnemyHealth>();
+        if (enemyHealth == null)
+        {
+            return;
+        }
+
+        foreach (var effect in effects)
+        {
+            float chance = Mathf.Clamp01(effect.chance);
+            if (chance <= 0f)
+            {
+                continue;
+            }
+
+            if (Random.value <= chance)
+            {
+                enemyHealth.ApplyStatusEffect(effect);
+            }
+        }
     }
 
     private void HandleTravelEffects()

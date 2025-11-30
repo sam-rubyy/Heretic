@@ -1,5 +1,12 @@
 using UnityEngine;
 
+public enum BulletOwner
+{
+    Neutral,
+    Player,
+    Enemy
+}
+
 [DisallowMultipleComponent]
 public class Bullet : MonoBehaviour
 {
@@ -8,6 +15,7 @@ public class Bullet : MonoBehaviour
     [SerializeField] private SpriteRenderer spriteRenderer;
     private BulletController controller;
     private Vector2 moveDirection = Vector2.right;
+    private BulletOwner owner = BulletOwner.Neutral;
     #endregion
 
     #region Unity Methods
@@ -46,6 +54,10 @@ public class Bullet : MonoBehaviour
     public BulletParams GetParameters() => bulletParameters;
 
     public Vector2 GetMoveDirection() => moveDirection;
+
+    public void SetOwner(BulletOwner newOwner) => owner = newOwner;
+
+    public BulletOwner GetOwner() => owner;
     #endregion
 
     #region Private Methods

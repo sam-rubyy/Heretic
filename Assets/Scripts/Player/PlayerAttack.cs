@@ -6,20 +6,42 @@ public class PlayerAttack : MonoBehaviour
 {
     #region Fields
     [SerializeField] private WeaponBase equippedWeapon;
-    [SerializeField] private bool useRawInput = true;
     private bool attackHeld;
     private Vector2 attackInput;
     private Vector2 lastAttackDirection = Vector2.right;
+    private global::InputSystem inputActions;
+    private global::InputSystem.PlayerActions playerActions;
     #endregion
 
     #region Unity Methods
+    private void Awake()
+    {
+        inputActions = new global::InputSystem();
+        playerActions = inputActions.Player;
+    }
+
+    private void OnEnable()
+    {
+        playerActions.Enable();
+        playerActions.Attack.performed += OnAttackAction;
+        playerActions.Attack.canceled += OnAttackAction;
+    }
+
+    private void OnDisable()
+    {
+        playerActions.Attack.performed -= OnAttackAction;
+        playerActions.Attack.canceled -= OnAttackAction;
+        playerActions.Disable();
+    }
+
+    private void OnDestroy()
+    {
+        playerActions.Disable();
+        inputActions.Dispose();
+    }
+
     private void Update()
     {
-        if (useRawInput)
-        {
-            PollRawInput();
-        }
-
         HandleAttackInput();
     }
     #endregion
@@ -75,37 +97,16 @@ public class PlayerAttack : MonoBehaviour
     #endregion
 
     #region Private Methods
-    private void PollRawInput()
+    private void OnAttackAction(InputAction.CallbackContext context)
     {
-        Vector2 input = Vector2.zero;
-
-        var gamepad = Gamepad.current;
-        if (gamepad != null)
-        {
-            input = gamepad.rightStick.ReadValue();
-        }
-
-        var keyboard = Keyboard.current;
-        if (keyboard != null)
-        {
-            float x = 0f;
-            float y = 0f;
-
-            if (keyboard.leftArrowKey.isPressed) x -= 1f;
-            if (keyboard.rightArrowKey.isPressed) x += 1f;
-            if (keyboard.downArrowKey.isPressed) y -= 1f;
-            if (keyboard.upArrowKey.isPressed) y += 1f;
-
-            var keyboardInput = new Vector2(x, y);
-
-            if (keyboardInput.sqrMagnitude > input.sqrMagnitude)
-            {
-                input = keyboardInput;
-            }
-        }
-
+        var input = context.ReadValue<Vector2>();
         SetAttackInput(input);
-        attackHeld = input.sqrMagnitude > 0.01f;
+        attackHeld = input.sqrMagnitude > 0.01f && context.phase != InputActionPhase.Canceled;
+        if (context.canceled)
+        {
+            SetAttackInput(Vector2.zero);
+            attackHeld = false;
+        }
     }
 
     private void HandleAttackInput()
