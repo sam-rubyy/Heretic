@@ -7,6 +7,7 @@ public class PlayerAttack : MonoBehaviour
     #region Fields
     [SerializeField] private WeaponBase equippedWeapon;
     [SerializeField] private AbilityController abilityController;
+    [SerializeField] private PlayerMovement playerMovement;
     private bool attackHeld;
     private Vector2 attackInput;
     private Vector2 lastAttackDirection = Vector2.right;
@@ -24,6 +25,11 @@ public class PlayerAttack : MonoBehaviour
             abilityController = GetComponent<AbilityController>();
         }
         abilityController?.SetAimDirection(lastAttackDirection);
+
+        if (playerMovement == null)
+        {
+            playerMovement = GetComponent<PlayerMovement>();
+        }
     }
 
     private void OnEnable()
@@ -67,6 +73,7 @@ public class PlayerAttack : MonoBehaviour
             lastAttackDirection = attackInput.normalized;
         }
         abilityController?.SetAimDirection(lastAttackDirection);
+        playerMovement?.SetAimDirection(lastAttackDirection);
     }
 
     public Vector2 GetLastAttackDirection()
@@ -86,7 +93,9 @@ public class PlayerAttack : MonoBehaviour
             return;
         }
 
+        playerMovement?.SetFireRate(equippedWeapon.GetCurrentFireRateForAnimation());
         equippedWeapon.HandleAttack(lastAttackDirection);
+        playerMovement?.PlayShootAnimation();
     }
 
     public void OnAttack(InputAction.CallbackContext context)

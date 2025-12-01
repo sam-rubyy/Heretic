@@ -10,6 +10,11 @@ public class PlayerMovement : MonoBehaviour
     [SerializeField] private float accelerationTime = 0.08f;
     [SerializeField] private float decelerationTime = 0.1f;
     [SerializeField] private float knockbackDamping = 12f;
+    [Header("Animation")]
+    [SerializeField] private string speedParam = "Speed";
+    [SerializeField] private string fireRateParam = "fireRate";
+    [SerializeField] private string shootTrigger = "shoot";
+    
 
     // Only used for interaction now
     [SerializeField] private LayerMask interactableLayer;   // NPC layer
@@ -17,10 +22,12 @@ public class PlayerMovement : MonoBehaviour
 
     private Vector2 movementInput;
     private Vector2 lastLookDirection = Vector2.right;
+    private Vector2 lastAimDirection = Vector2.right;
     private bool noInput;
     private Vector2 smoothedVelocity;
     private Vector2 smoothVelocityRef;
     private Vector2 knockbackVelocity;
+    private float currentSpeed;
 
     private Animator animator;
     private SpriteRenderer spriteRenderer;
@@ -63,14 +70,28 @@ public class PlayerMovement : MonoBehaviour
     {
         noInput = movementInput == Vector2.zero;
 
-        animator.SetBool("noInput", noInput);
-        // animator.SetFloat("Blend", movementInput.sqrMagnitude);
+        if (animator != null)
+        {
+            animator.SetBool("noInput", noInput);
+            // animator.SetFloat("Blend", movementInput.sqrMagnitude);
+            if (!string.IsNullOrEmpty(speedParam))
+            {
+                animator.SetFloat(speedParam, currentSpeed);
+            }
+        }
 
         // flip left / right
-        if (movementInput.x > 0.01f)
-            spriteRenderer.flipX = false;
-        else if (movementInput.x < -0.01f)
-            spriteRenderer.flipX = true;
+        if (spriteRenderer != null)
+        {
+            if (movementInput.x > 0.01f)
+                spriteRenderer.flipX = false;
+            else if (movementInput.x < -0.01f)
+                spriteRenderer.flipX = true;
+            else if (lastAimDirection.x > 0.01f)
+                spriteRenderer.flipX = false;
+            else if (lastAimDirection.x < -0.01f)
+                spriteRenderer.flipX = true;
+        }
 
         // Press E to interact with NPC
         if (Keyboard.current != null && Keyboard.current.eKey.wasPressedThisFrame)
@@ -150,6 +171,8 @@ public class PlayerMovement : MonoBehaviour
             body.velocity = finalVelocity;
         else
             body.MovePosition(nextPos);
+
+        currentSpeed = finalVelocity.magnitude;
     }
 
     private bool IsBlocked(Vector2 targetPos)
@@ -204,6 +227,26 @@ public class PlayerMovement : MonoBehaviour
             lastLookDirection = movementInput.normalized;
     }
 
+    public void SetAimDirection(Vector2 aimDirection)
+    {
+        if (aimDirection.sqrMagnitude < 0.0001f)
+        {
+            return;
+        }
+
+        lastAimDirection = aimDirection.normalized;
+    }
+
+    public void PlayShootAnimation()
+    {
+        if (animator == null || string.IsNullOrEmpty(shootTrigger))
+        {
+            return;
+        }
+
+        animator.SetTrigger(shootTrigger);
+    }
+
     public void ApplyKnockback(Vector2 direction, float force)
     {
         if (force <= 0f)
@@ -220,5 +263,15 @@ public class PlayerMovement : MonoBehaviour
     {
         Gizmos.color = Color.yellow;
         Gizmos.DrawWireSphere(transform.position, interactRadius);
+    }
+
+    public void SetFireRate(float fireRate)
+    {
+        if (animator == null || string.IsNullOrEmpty(fireRateParam))
+        {
+            return;
+        }
+
+        animator.SetFloat(fireRateParam, fireRate);
     }
 }

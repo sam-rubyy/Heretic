@@ -37,6 +37,17 @@ public class WeaponBase : MonoBehaviour
         HandleAttack(direction);
     }
 
+    public float GetCurrentFireRateForAnimation()
+    {
+        if (weaponData == null)
+        {
+            return 0f;
+        }
+
+        var finalShotParams = GetModifiedShotParams(weaponData.ShotParameters);
+        return Mathf.Max(0f, finalShotParams.fireRate);
+    }
+
     public virtual void HandleAttack(Vector2 direction)
     {
         if (weaponData == null || bulletPrefab == null || firePoint == null)
