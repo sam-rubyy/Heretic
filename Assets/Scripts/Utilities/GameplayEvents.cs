@@ -1,10 +1,13 @@
 using System;
+using UnityEngine;
 
 public static class GameplayEvents
 {
     #region Events
     public static event Action<EnemyBase> OnEnemyDied;
     public static event Action<Room> OnRoomCleared;
+    public static event Action<EnemyBase, ItemBase> OnEnemyDroppedItem;
+    public static event Action<ItemBase, GameObject> OnItemCollected;
     #endregion
 
     #region Public Methods
@@ -16,6 +19,16 @@ public static class GameplayEvents
     public static void RaiseRoomCleared(Room room)
     {
         OnRoomCleared?.Invoke(room);
+    }
+
+    public static void RaiseEnemyDroppedItem(EnemyBase enemy, ItemBase item)
+    {
+        OnEnemyDroppedItem?.Invoke(enemy, item);
+    }
+
+    public static void RaiseItemCollected(ItemBase item, GameObject collector)
+    {
+        OnItemCollected?.Invoke(item, collector);
     }
     #endregion
 }

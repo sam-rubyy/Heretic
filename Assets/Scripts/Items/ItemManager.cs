@@ -26,6 +26,7 @@ public class ItemManager : MonoBehaviour
         collectedItems.Add(item);
         ApplyPlayerStatModifier(item);
         item.OnCollected(collector);
+        GameplayEvents.RaiseItemCollected(item, collector);
     }
 
     public void RemoveItem(ItemBase item, GameObject collector)

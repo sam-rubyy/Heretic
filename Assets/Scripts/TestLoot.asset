@@ -9,11 +9,9 @@ MonoBehaviour:
   m_GameObject: {fileID: 0}
   m_Enabled: 1
   m_EditorHideFlags: 0
-  m_Script: {fileID: 11500000, guid: 17a8708210d32b35ab29ddd322f97a8a, type: 3}
-  m_Name: DamageBoostItem
+  m_Script: {fileID: 11500000, guid: 0e049aba2da6609ccb3a8387530d2d2a, type: 3}
+  m_Name: TestLoot
   m_EditorClassIdentifier: 
-  itemId: 1
-  displayName: Damage Up
-  description: '+5 Damage '
-  icon: {fileID: -1140211962, guid: dd17d318ee4fa814492d8f85d2af3511, type: 3}
-  flatDamageBonus: 5
+  entries:
+  - item: {fileID: 11400000, guid: 28b730e3adbae3f1fb0ef60b42d236f5, type: 2}
+    weight: 100

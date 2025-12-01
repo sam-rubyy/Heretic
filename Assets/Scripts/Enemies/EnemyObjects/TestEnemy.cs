@@ -4,6 +4,7 @@ using UnityEngine;
 [DisallowMultipleComponent]
 [RequireComponent(typeof(Rigidbody2D))]
 [RequireComponent(typeof(EnemyHealth))]
+[RequireComponent(typeof(EnemyLootDropper))]
 public class TestEnemy : EnemyBase
     , IKnockbackReceiver
 {
@@ -21,6 +22,8 @@ public class TestEnemy : EnemyBase
     [SerializeField] private float waypointTolerance = 0.05f;
     [SerializeField] private float stopDistance = 0.1f;
     [SerializeField] private float pathClearancePadding = 0.05f;
+    [Header("Abilities")]
+    [SerializeField] private AbilityController abilityController;
 
     private Rigidbody2D body;
     private SpriteRenderer spriteRenderer;
@@ -33,12 +36,17 @@ public class TestEnemy : EnemyBase
     [SerializeField] private float knockbackDamping = 12f;
     private float agentClearance;
 
-    private void Awake()
+    protected override void Awake()
     {
+        base.Awake();
         body = GetComponent<Rigidbody2D>();
         spriteRenderer = GetComponent<SpriteRenderer>();
         col = GetComponent<Collider2D>();
         agentClearance = (col != null ? Mathf.Max(col.bounds.extents.x, col.bounds.extents.y) : 0f) + Mathf.Max(0f, pathClearancePadding);
+        if (abilityController == null)
+        {
+            abilityController = GetComponent<AbilityController>();
+        }
 
         if (target == null)
         {
@@ -54,12 +62,21 @@ public class TestEnemy : EnemyBase
     {
         base.Initialize();
         EnsureTarget();
+        if (abilityController != null)
+        {
+            abilityController.SetTarget(target);
+            abilityController.ResetCooldowns();
+        }
     }
 
     public override void OnSpawned()
     {
         base.OnSpawned();
         EnsureTarget();
+        if (abilityController != null)
+        {
+            abilityController.SetTarget(target);
+        }
     }
 
     private void FixedUpdate()
@@ -111,6 +128,10 @@ public class TestEnemy : EnemyBase
         if (player != null)
         {
             target = player.transform;
+            if (abilityController != null)
+            {
+                abilityController.SetTarget(target);
+            }
         }
     }
 

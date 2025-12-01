@@ -6,6 +6,7 @@ public class PlayerAttack : MonoBehaviour
 {
     #region Fields
     [SerializeField] private WeaponBase equippedWeapon;
+    [SerializeField] private AbilityController abilityController;
     private bool attackHeld;
     private Vector2 attackInput;
     private Vector2 lastAttackDirection = Vector2.right;
@@ -18,6 +19,11 @@ public class PlayerAttack : MonoBehaviour
     {
         inputActions = new global::InputSystem();
         playerActions = inputActions.Player;
+        if (abilityController == null)
+        {
+            abilityController = GetComponent<AbilityController>();
+        }
+        abilityController?.SetAimDirection(lastAttackDirection);
     }
 
     private void OnEnable()
@@ -60,6 +66,7 @@ public class PlayerAttack : MonoBehaviour
         {
             lastAttackDirection = attackInput.normalized;
         }
+        abilityController?.SetAimDirection(lastAttackDirection);
     }
 
     public Vector2 GetLastAttackDirection()

@@ -61,6 +61,16 @@ public class BulletController : MonoBehaviour
             return;
         }
 
+        if (other == null)
+        {
+            return;
+        }
+
+        if (other.GetComponentInParent<Bullet>() != null)
+        {
+            return; // Ignore bullet-on-bullet collisions to prevent self-destruction in spreads/bursts.
+        }
+
         bool hitEnemy;
         bool shouldDestroy = ApplyDamage(other, out hitEnemy);
 

@@ -6,12 +6,14 @@ public abstract class ItemBase : ScriptableObject
     [SerializeField] private string itemId;
     [SerializeField] private string displayName;
     [TextArea] [SerializeField] private string description;
+    [SerializeField] private Sprite icon;
     #endregion
 
     #region Properties
     public string ItemId => itemId;
     public string DisplayName => displayName;
     public string Description => description;
+    public Sprite Icon => icon;
     #endregion
 
     #region Public Methods
