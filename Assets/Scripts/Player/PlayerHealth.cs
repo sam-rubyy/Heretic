@@ -15,6 +15,10 @@ public class PlayerHealth : MonoBehaviour
     [SerializeField] private float hitFlashDuration = 0.1f;
     [SerializeField] private SpriteRenderer[] renderers;
 
+    public int Health => currentHealth;
+    public int MaxHealth => maxHealth;
+
+
     private Rigidbody2D body;
     private Coroutine invulRoutine;
     private Coroutine flashRoutine;
