@@ -25,14 +25,14 @@ public class AbilityItem : ItemBase
     #endregion
 
     #region Private Methods
-    private AbilityController GetAbilityController(GameObject collector)
+    private IAbilityCollection GetAbilityController(GameObject collector)
     {
         if (collector == null)
         {
             return null;
         }
 
-        return collector.GetComponentInChildren<AbilityController>();
+        return collector.GetComponentInChildren<IAbilityCollection>();
     }
     #endregion
 }

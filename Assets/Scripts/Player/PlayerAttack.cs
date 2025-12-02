@@ -6,7 +6,7 @@ public class PlayerAttack : MonoBehaviour
 {
     #region Fields
     [SerializeField] private WeaponBase equippedWeapon;
-    [SerializeField] private AbilityController abilityController;
+    [SerializeField] private PlayerAbilityController abilityController;
     [SerializeField] private PlayerMovement playerMovement;
     private bool attackHeld;
     private Vector2 attackInput;
@@ -22,7 +22,7 @@ public class PlayerAttack : MonoBehaviour
         playerActions = inputActions.Player;
         if (abilityController == null)
         {
-            abilityController = GetComponent<AbilityController>();
+            abilityController = GetComponent<PlayerAbilityController>();
         }
         abilityController?.SetAimDirection(lastAttackDirection);
 

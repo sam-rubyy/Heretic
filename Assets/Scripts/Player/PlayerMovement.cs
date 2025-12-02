@@ -14,16 +14,11 @@ public class PlayerMovement : MonoBehaviour
     [SerializeField] private string speedParam = "Speed";
     [SerializeField] private string fireRateParam = "fireRate";
     [SerializeField] private string shootTrigger = "shoot";
-    
-
-    // Only used for interaction now
-    [SerializeField] private LayerMask interactableLayer;   // NPC layer
-    [SerializeField] private float interactRadius = 1f;
-
     private Vector2 movementInput;
     private Vector2 lastLookDirection = Vector2.right;
     private Vector2 lastAimDirection = Vector2.right;
     private bool noInput;
+
     private Vector2 smoothedVelocity;
     private Vector2 smoothVelocityRef;
     private Vector2 knockbackVelocity;
@@ -72,7 +67,7 @@ public class PlayerMovement : MonoBehaviour
 
         if (animator != null)
         {
-            animator.SetBool("noInput", noInput);
+            //animator.SetBool("noInput", noInput);
             // animator.SetFloat("Blend", movementInput.sqrMagnitude);
             if (!string.IsNullOrEmpty(speedParam))
             {
@@ -91,12 +86,6 @@ public class PlayerMovement : MonoBehaviour
                 spriteRenderer.flipX = false;
             else if (lastAimDirection.x < -0.01f)
                 spriteRenderer.flipX = true;
-        }
-
-        // Press E to interact with NPC
-        if (Keyboard.current != null && Keyboard.current.eKey.wasPressedThisFrame)
-        {
-            TryInteract();
         }
 
         UpdateLookDirection();
@@ -202,25 +191,6 @@ public class PlayerMovement : MonoBehaviour
         return false;
     }
 
-    private void TryInteract()
-    {
-        // Check for NPCs in a circle around the player
-        Collider2D hit = Physics2D.OverlapCircle(
-            transform.position,
-            interactRadius,
-            interactableLayer
-        );
-
-        if (hit != null)
-        {
-            Debug.Log("NPC detected: " + hit.name);
-        }
-        else
-        {
-            Debug.Log("No NPC nearby.");
-        }
-    }
-
     private void UpdateLookDirection()
     {
         if (movementInput.sqrMagnitude > 0.001f)
@@ -256,13 +226,6 @@ public class PlayerMovement : MonoBehaviour
             direction = Vector2.right;
 
         knockbackVelocity += direction.normalized * force;
-    }
-
-    // Just to see the interaction radius in Scene view (optional)
-    private void OnDrawGizmosSelected()
-    {
-        Gizmos.color = Color.yellow;
-        Gizmos.DrawWireSphere(transform.position, interactRadius);
     }
 
     public void SetFireRate(float fireRate)

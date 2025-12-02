@@ -8,11 +8,19 @@ public class ItemManager : MonoBehaviour
     #region Fields
     [SerializeField] private List<ItemBase> collectedItems = new List<ItemBase>();
     [SerializeField] private PlayerStats playerStats;
+    private bool initialized;
     #endregion
 
     #region Properties
     public IReadOnlyList<ItemBase> CollectedItems => collectedItems;
     public PlayerStats PlayerStats => playerStats;
+    #endregion
+
+    #region Unity Methods
+    private void OnEnable()
+    {
+        InitializeExistingItems();
+    }
     #endregion
 
     #region Public Methods
@@ -69,6 +77,28 @@ public class ItemManager : MonoBehaviour
     #endregion
 
     #region Private Methods
+    private void InitializeExistingItems()
+    {
+        if (initialized)
+        {
+            return;
+        }
+
+        initialized = true;
+
+        for (int i = 0; i < collectedItems.Count; i++)
+        {
+            var item = collectedItems[i];
+            if (item == null)
+            {
+                continue;
+            }
+
+            ApplyPlayerStatModifier(item);
+            item.OnCollected(gameObject);
+        }
+    }
+
     private IEnumerable<ItemBase> GetOrderedItems()
     {
         return collectedItems
