@@ -32,6 +32,7 @@ public class ItemManager : MonoBehaviour
         }
 
         collectedItems.Add(item);
+        SortItemsByPriority();
         ApplyPlayerStatModifier(item);
         item.OnCollected(collector);
         GameplayEvents.RaiseItemCollected(item, collector);
@@ -46,13 +47,15 @@ public class ItemManager : MonoBehaviour
 
         RemovePlayerStatModifier(item);
         collectedItems.Remove(item);
+        SortItemsByPriority();
         item.OnRemoved(collector);
     }
 
     public ShotParams ApplyShotModifiers(ShotParams shotParams)
     {
-        foreach (var item in GetOrderedItems())
+        for (int i = 0; i < collectedItems.Count; i++)
         {
+            var item = collectedItems[i];
             if (item is IShotModifier modifier)
             {
                 shotParams = modifier.ModifyShot(shotParams);
@@ -64,8 +67,9 @@ public class ItemManager : MonoBehaviour
 
     public BulletParams ApplyBulletModifiers(BulletParams bulletParams)
     {
-        foreach (var item in GetOrderedItems())
+        for (int i = 0; i < collectedItems.Count; i++)
         {
+            var item = collectedItems[i];
             if (item is IBulletModifier modifier)
             {
                 bulletParams = modifier.ModifyBullet(bulletParams);
@@ -99,12 +103,6 @@ public class ItemManager : MonoBehaviour
         }
     }
 
-    private IEnumerable<ItemBase> GetOrderedItems()
-    {
-        return collectedItems
-            .OrderBy(item => (item as IItemModifierPriority)?.Priority ?? 0);
-    }
-
     private void ApplyPlayerStatModifier(ItemBase item)
     {
         if (playerStats == null)
@@ -129,6 +127,16 @@ public class ItemManager : MonoBehaviour
         {
             statModifier.Remove(playerStats);
         }
+    }
+
+    private void SortItemsByPriority()
+    {
+        collectedItems.Sort((a, b) =>
+        {
+            int aPriority = (a as IItemModifierPriority)?.Priority ?? 0;
+            int bPriority = (b as IItemModifierPriority)?.Priority ?? 0;
+            return aPriority.CompareTo(bPriority);
+        });
     }
     #endregion
 }

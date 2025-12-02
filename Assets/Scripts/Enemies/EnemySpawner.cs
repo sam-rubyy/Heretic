@@ -7,6 +7,7 @@ public class EnemySpawner : MonoBehaviour
     #region Fields
     [SerializeField] private EnemyBase enemyPrefab;
     [SerializeField] private Transform[] spawnPoints;
+    [SerializeField] private Room owningRoom;
     private readonly List<EnemyBase> activeEnemies = new List<EnemyBase>();
     #endregion
 
@@ -21,18 +22,19 @@ public class EnemySpawner : MonoBehaviour
         for (int i = 0; i < count; i++)
         {
             Transform spawnPoint = spawnPoints[i % spawnPoints.Length];
-            SpawnEnemy(enemyPrefab, spawnPoint.position);
+            SpawnEnemy(enemyPrefab, spawnPoint.position, owningRoom);
         }
     }
 
-    public void SpawnEnemy(EnemyBase prefab, Vector3 position)
+    public void SpawnEnemy(EnemyBase prefab, Vector3 position, Room roomOverride = null)
     {
-        if (prefab == null)
+        var prefabToUse = prefab == null ? enemyPrefab : prefab;
+        if (prefabToUse == null)
         {
             return;
         }
 
-        EnemyBase enemyInstance = Instantiate(prefab, position, Quaternion.identity);
+        EnemyBase enemyInstance = Instantiate(prefabToUse, position, Quaternion.identity);
         if (enemyInstance == null)
         {
             return;
@@ -40,6 +42,12 @@ public class EnemySpawner : MonoBehaviour
 
         enemyInstance.transform.SetParent(transform);
         activeEnemies.Add(enemyInstance);
+
+        Room room = roomOverride != null ? roomOverride : owningRoom;
+        if (room != null)
+        {
+            room.RegisterEnemy(enemyInstance);
+        }
 
         var health = enemyInstance.GetComponent<EnemyHealth>();
         if (health != null)
@@ -60,6 +68,11 @@ public class EnemySpawner : MonoBehaviour
             if (enemy == null)
             {
                 continue;
+            }
+
+            if (owningRoom != null)
+            {
+                owningRoom.UnregisterEnemy(enemy);
             }
 
             var health = enemy.GetComponent<EnemyHealth>();
@@ -90,6 +103,18 @@ public class EnemySpawner : MonoBehaviour
         {
             health.Died -= HandleEnemyDied;
         }
+
+        if (owningRoom != null)
+        {
+            owningRoom.UnregisterEnemy(enemy);
+        }
+    }
+    #endregion
+
+    #region Configuration
+    public void SetOwningRoom(Room room)
+    {
+        owningRoom = room;
     }
     #endregion
 }

@@ -20,6 +20,7 @@ public class PlayerHealth : MonoBehaviour
 
 
     private Rigidbody2D body;
+    private bool isDead;
     private Coroutine invulRoutine;
     private Coroutine flashRoutine;
     private bool isInvulnerable;
@@ -57,7 +58,7 @@ public class PlayerHealth : MonoBehaviour
 
         if (currentHealth <= 0)
         {
-            // Future death handling can be added here (animations, events, etc).
+            HandleDeath();
         }
     }
 
@@ -74,10 +75,22 @@ public class PlayerHealth : MonoBehaviour
     public void ResetHealth()
     {
         currentHealth = maxHealth;
+        isDead = false;
     }
     #endregion
 
     #region Private Methods
+    private void HandleDeath()
+    {
+        if (isDead)
+        {
+            return;
+        }
+
+        isDead = true;
+        GameplayEvents.RaisePlayerDied(this);
+    }
+
     private void ApplyKnockback(Vector2 sourcePosition, float force)
     {
         if (force <= 0f)

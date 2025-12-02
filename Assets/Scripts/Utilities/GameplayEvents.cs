@@ -8,6 +8,7 @@ public static class GameplayEvents
     public static event Action<Room> OnRoomCleared;
     public static event Action<EnemyBase, ItemBase> OnEnemyDroppedItem;
     public static event Action<ItemBase, GameObject> OnItemCollected;
+    public static event Action<PlayerHealth> OnPlayerDied;
     #endregion
 
     #region Public Methods
@@ -29,6 +30,11 @@ public static class GameplayEvents
     public static void RaiseItemCollected(ItemBase item, GameObject collector)
     {
         OnItemCollected?.Invoke(item, collector);
+    }
+
+    public static void RaisePlayerDied(PlayerHealth player)
+    {
+        OnPlayerDied?.Invoke(player);
     }
     #endregion
 }

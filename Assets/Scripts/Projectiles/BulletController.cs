@@ -6,9 +6,10 @@ public class BulletController : MonoBehaviour
 {
     #region Fields
     [SerializeField] private Bullet bullet;
-    private float lifetimeTimer;
     private float distanceTraveled;
     private float travelEffectTimer;
+    private BulletParams cachedParams;
+    private bool hasCachedParams;
     #endregion
 
     #region Unity Methods
@@ -22,6 +23,11 @@ public class BulletController : MonoBehaviour
 
     private void Update()
     {
+        if (!EnsureParamsCached())
+        {
+            return;
+        }
+
         HandleMovement();
         HandleTravelEffects();
         HandleLifetime();
@@ -36,12 +42,11 @@ public class BulletController : MonoBehaviour
     #region Private Methods
     private void HandleMovement()
     {
-        if (bullet == null)
+        if (!EnsureParamsCached())
         {
             return;
         }
 
-        BulletParams bulletParams = bullet.GetParameters();
         Vector2 direction = bullet.GetMoveDirection();
 
         if (direction.sqrMagnitude < 0.001f)
@@ -49,14 +54,14 @@ public class BulletController : MonoBehaviour
             direction = transform.right;
         }
 
-        Vector2 displacement = direction.normalized * bulletParams.speed * Time.deltaTime;
+        Vector2 displacement = direction.normalized * cachedParams.speed * Time.deltaTime;
         transform.position += (Vector3)displacement;
         distanceTraveled += displacement.magnitude;
     }
 
     private void HandleCollision(Collider2D other)
     {
-        if (bullet == null)
+        if (!EnsureParamsCached())
         {
             return;
         }
@@ -89,7 +94,7 @@ public class BulletController : MonoBehaviour
     {
         hitEnemy = false;
 
-        if (bullet == null)
+        if (!EnsureParamsCached())
         {
             return false;
         }
@@ -104,9 +109,8 @@ public class BulletController : MonoBehaviour
                 return false; // Ignore friendly fire on the player.
             }
 
-            BulletParams bulletParams = bullet.GetParameters();
             Vector2 sourcePos = transform.position;
-            playerHealth.TakeDamage(Mathf.RoundToInt(bulletParams.damage), sourcePos, bulletParams.knockback);
+            playerHealth.TakeDamage(Mathf.RoundToInt(cachedParams.damage), sourcePos, cachedParams.knockback);
             return true;
         }
 
@@ -118,13 +122,12 @@ public class BulletController : MonoBehaviour
                 return false; // Ignore enemy bullets hitting enemies.
             }
 
-            BulletParams bulletParams = bullet.GetParameters();
             Vector2 sourcePos = transform.position;
 
-            enemyHealth.TakeDamage(bulletParams.damage);
-            enemyHealth.ApplyKnockback(sourcePos, bulletParams.knockback);
+            enemyHealth.TakeDamage(cachedParams.damage);
+            enemyHealth.ApplyKnockback(sourcePos, cachedParams.knockback);
 
-            if (bulletParams.knockback > 0f && other.attachedRigidbody != null && !other.TryGetComponent<IKnockbackReceiver>(out _))
+            if (cachedParams.knockback > 0f && other.attachedRigidbody != null && !other.TryGetComponent<IKnockbackReceiver>(out _))
             {
                 Vector2 direction = bullet.GetMoveDirection();
                 if (direction.sqrMagnitude < 0.001f)
@@ -132,7 +135,7 @@ public class BulletController : MonoBehaviour
                     direction = transform.right;
                 }
 
-                other.attachedRigidbody.AddForce(direction.normalized * bulletParams.knockback, ForceMode2D.Impulse);
+                other.attachedRigidbody.AddForce(direction.normalized * cachedParams.knockback, ForceMode2D.Impulse);
             }
 
             hitEnemy = true;
@@ -189,22 +192,38 @@ public class BulletController : MonoBehaviour
 
     private void HandleLifetime()
     {
-        if (bullet == null)
+        if (!EnsureParamsCached())
         {
             return;
         }
 
-        float maxDistance = bullet.GetParameters().lifetime;
+        float maxDistance = cachedParams.lifetime;
         if (maxDistance <= 0f)
         {
             return;
         }
 
-        lifetimeTimer += Time.deltaTime;
         if (distanceTraveled >= maxDistance)
         {
             Destroy(gameObject);
         }
+    }
+
+    private bool EnsureParamsCached()
+    {
+        if (hasCachedParams)
+        {
+            return true;
+        }
+
+        if (bullet == null)
+        {
+            return false;
+        }
+
+        cachedParams = bullet.GetParameters();
+        hasCachedParams = true;
+        return true;
     }
     #endregion
 }

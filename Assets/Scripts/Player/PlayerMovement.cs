@@ -23,6 +23,7 @@ public class PlayerMovement : MonoBehaviour
     private Vector2 smoothVelocityRef;
     private Vector2 knockbackVelocity;
     private float currentSpeed;
+    private readonly Collider2D[] overlapBuffer = new Collider2D[12];
 
     private Animator animator;
     private SpriteRenderer spriteRenderer;
@@ -169,11 +170,10 @@ public class PlayerMovement : MonoBehaviour
         // Size of the player's hitbox for checking collisions
         Vector2 boxSize = new Vector2(0.8f, 0.8f);
 
-        Collider2D[] hits = Physics2D.OverlapBoxAll(targetPos, boxSize, 0f);
-
-        for (int i = 0; i < hits.Length; i++)
+        int hitCount = Physics2D.OverlapBoxNonAlloc(targetPos, boxSize, 0f, overlapBuffer);
+        for (int i = 0; i < hitCount; i++)
         {
-            var hit = hits[i];
+            var hit = overlapBuffer[i];
             if (hit == null || hit.isTrigger)
                 continue;
 

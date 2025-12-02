@@ -100,29 +100,14 @@ public class PlayerAttack : MonoBehaviour
 
     public void OnAttack(InputAction.CallbackContext context)
     {
-        var input = context.ReadValue<Vector2>();
-        SetAttackInput(input);
-        attackHeld = input.sqrMagnitude > 0.01f;
-
-        if (context.canceled)
-        {
-            SetAttackInput(Vector2.zero);
-            attackHeld = false;
-        }
+        ProcessAttackContext(context);
     }
     #endregion
 
     #region Private Methods
     private void OnAttackAction(InputAction.CallbackContext context)
     {
-        var input = context.ReadValue<Vector2>();
-        SetAttackInput(input);
-        attackHeld = input.sqrMagnitude > 0.01f && context.phase != InputActionPhase.Canceled;
-        if (context.canceled)
-        {
-            SetAttackInput(Vector2.zero);
-            attackHeld = false;
-        }
+        ProcessAttackContext(context);
     }
 
     private void HandleAttackInput()
@@ -133,6 +118,19 @@ public class PlayerAttack : MonoBehaviour
         }
 
         TryAttack();
+    }
+
+    private void ProcessAttackContext(InputAction.CallbackContext context)
+    {
+        var input = context.ReadValue<Vector2>();
+        SetAttackInput(input);
+        attackHeld = input.sqrMagnitude > 0.01f && context.phase != InputActionPhase.Canceled;
+
+        if (context.canceled)
+        {
+            SetAttackInput(Vector2.zero);
+            attackHeld = false;
+        }
     }
     #endregion
 }
