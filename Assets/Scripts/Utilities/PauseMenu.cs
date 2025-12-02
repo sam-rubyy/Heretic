@@ -4,6 +4,8 @@ using UnityEngine;
 using UnityEngine.SceneManagement;
 
 
+// Hi i exist :)
+
 public class PauseMenu : MonoBehaviour
 {
     [SerializeField] GameObject pauseMenu;
