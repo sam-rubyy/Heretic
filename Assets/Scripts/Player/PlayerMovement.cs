@@ -10,6 +10,11 @@ public class PlayerMovement : MonoBehaviour
     [SerializeField] private float accelerationTime = 0.08f;
     [SerializeField] private float decelerationTime = 0.1f;
     [SerializeField] private float knockbackDamping = 12f;
+    [Header("Dash")]
+    [SerializeField] private float dashSpeedMultiplier = 2f;
+    [SerializeField] private float dashDurationSeconds = 0.2f;
+    [SerializeField] private float dashCooldownSeconds = 0.35f;
+    [SerializeField] private bool dashUsesUnscaledTime = true;
     [Header("Animation")]
     [SerializeField] private string speedParam = "Speed";
     [SerializeField] private string fireRateParam = "fireRate";
@@ -29,6 +34,9 @@ public class PlayerMovement : MonoBehaviour
     private SpriteRenderer spriteRenderer;
     private global::InputSystem inputActions;
     private global::InputSystem.PlayerActions playerActions;
+    private InputAction dashAction;
+    private DashRunner dashRunner;
+    private float nextDashTime;
 
     private void Awake()
     {
@@ -40,6 +48,12 @@ public class PlayerMovement : MonoBehaviour
 
         inputActions = new global::InputSystem();
         playerActions = inputActions.Player;
+
+        dashRunner = GetComponent<DashRunner>();
+        if (dashRunner == null)
+            dashRunner = gameObject.AddComponent<DashRunner>();
+
+        dashAction = new InputAction("Dash", InputActionType.Button, "<Keyboard>/shift");
     }
 
     private void OnEnable()
@@ -47,6 +61,9 @@ public class PlayerMovement : MonoBehaviour
         playerActions.Enable();
         playerActions.Movement.performed += OnMovementAction;
         playerActions.Movement.canceled += OnMovementAction;
+
+        dashAction.Enable();
+        dashAction.performed += OnDashAction;
     }
 
     private void OnDisable()
@@ -54,12 +71,17 @@ public class PlayerMovement : MonoBehaviour
         playerActions.Movement.performed -= OnMovementAction;
         playerActions.Movement.canceled -= OnMovementAction;
         playerActions.Disable();
+
+        dashAction.performed -= OnDashAction;
+        dashAction.Disable();
     }
 
     private void OnDestroy()
     {
         playerActions.Disable();
         inputActions.Dispose();
+
+        dashAction?.Dispose();
     }
 
     private void Update()
@@ -117,18 +139,27 @@ public class PlayerMovement : MonoBehaviour
 
     private void HandleMovement()
     {
+        if (dashRunner != null && dashRunner.IsDashing)
+        {
+            currentSpeed = dashRunner.ActiveDashSpeed;
+            return;
+        }
+
         Vector2 input = movementInput;
+        float deltaTime = BulletTimeRunner.GetPlayerFixedDeltaTime();
+        if (deltaTime <= 0f)
+            return;
 
         if (input.sqrMagnitude > 1f)
             input = input.normalized;
 
         float smoothTime = input.sqrMagnitude > 0.001f ? accelerationTime : decelerationTime;
-        smoothedVelocity = Vector2.SmoothDamp(smoothedVelocity, input * moveSpeed, ref smoothVelocityRef, smoothTime);
+        smoothedVelocity = Vector2.SmoothDamp(smoothedVelocity, input * moveSpeed, ref smoothVelocityRef, smoothTime, Mathf.Infinity, deltaTime);
 
         // Apply knockback decay
-        knockbackVelocity = Vector2.MoveTowards(knockbackVelocity, Vector2.zero, knockbackDamping * Time.fixedDeltaTime);
+        knockbackVelocity = Vector2.MoveTowards(knockbackVelocity, Vector2.zero, knockbackDamping * deltaTime);
 
-        Vector2 moveDelta = (smoothedVelocity + knockbackVelocity) * Time.fixedDeltaTime;
+        Vector2 moveDelta = (smoothedVelocity + knockbackVelocity) * deltaTime;
         Vector2 nextPos = body.position;
 
         if (Mathf.Abs(moveDelta.x) > Mathf.Epsilon)
@@ -155,7 +186,12 @@ public class PlayerMovement : MonoBehaviour
             }
         }
 
-        Vector2 finalVelocity = (nextPos - body.position) / Time.fixedDeltaTime;
+        Vector2 finalVelocity = (nextPos - body.position) / deltaTime;
+        if (BulletTimeRunner.UseUnscaledPlayerTime)
+        {
+            float integrationFactor = deltaTime / Mathf.Max(0.0001f, Time.fixedDeltaTime);
+            finalVelocity *= integrationFactor;
+        }
 
         if (body.bodyType == RigidbodyType2D.Dynamic)
             body.velocity = finalVelocity;
@@ -236,5 +272,51 @@ public class PlayerMovement : MonoBehaviour
         }
 
         animator.SetFloat(fireRateParam, fireRate);
+    }
+
+    public float GetMoveSpeed()
+    {
+        return moveSpeed;
+    }
+
+    private void OnDashAction(InputAction.CallbackContext context)
+    {
+        if (context.phase != InputActionPhase.Performed)
+            return;
+
+        TryDash();
+    }
+
+    private void TryDash()
+    {
+        float now = BulletTimeRunner.GetPlayerTime();
+        if (now < nextDashTime)
+        {
+            return;
+        }
+
+        Vector2 dir = GetMovementInputDirection();
+        if (dir.sqrMagnitude < 0.0001f || dashRunner == null)
+        {
+            return;
+        }
+
+        dashRunner.Trigger(dir.normalized, dashSpeedMultiplier, dashDurationSeconds, dashUsesUnscaledTime);
+        nextDashTime = now + Mathf.Max(0f, dashCooldownSeconds);
+    }
+
+    public Vector2 GetMovementInputDirection()
+    {
+        if (movementInput.sqrMagnitude > 0.0001f)
+        {
+            return movementInput.normalized;
+        }
+
+        if (lastLookDirection.sqrMagnitude > 0.0001f)
+        {
+            return lastLookDirection.normalized;
+        }
+
+        return Vector2.right;
     }
 }

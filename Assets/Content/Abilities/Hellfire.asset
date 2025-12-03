@@ -1,0 +1,35 @@
+%YAML 1.1
+%TAG !u! tag:unity3d.com,2011:
+--- !u!114 &11400000
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 9f16773a7f10fcaea8a046c528bc5bee, type: 3}
+  m_Name: Hellfire
+  m_EditorClassIdentifier: 
+  abilityId: 3
+  cooldownSeconds: 8
+  useWeight: 1
+  minRange: 0
+  maxRange: 9999
+  bulletPrefab: {fileID: 4990963897180891873, guid: 09f203d649c0c1c6b9e585fb35ae5591, type: 3}
+  bulletParams:
+    damage: 10
+    speed: 10
+    lifetime: 10
+    knockback: 5
+    onHitEffects: []
+    onTravelEffects: []
+  spawnOffset: {x: 0, y: 0}
+  aimSpreadDegrees: 0
+  requireTarget: 0
+  burningEffect:
+    effectId: Burning
+    chance: 1
+    duration: 3
+    intensity: 1

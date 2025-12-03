@@ -36,4 +36,16 @@ public abstract class Ability : ScriptableObject
 
     public abstract void Activate(AbilityContext context);
     #endregion
+
+    #region Protected Methods
+    protected bool HasAimOrTarget(AbilityContext context)
+    {
+        if (context == null)
+        {
+            return false;
+        }
+
+        return context.Target != null || context.AimDirection.sqrMagnitude > 0.0001f;
+    }
+    #endregion
 }

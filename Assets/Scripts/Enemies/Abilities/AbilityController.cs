@@ -1,3 +1,4 @@
+using System;
 using System.Collections.Generic;
 using UnityEngine;
 
@@ -300,7 +301,7 @@ public class AbilityController : MonoBehaviour, IAbilityCollection
             return slots[0];
         }
 
-        float roll = Random.value * totalWeight;
+        float roll = UnityEngine.Random.value * totalWeight;
         for (int i = 0; i < slots.Count; i++)
         {
             float weight = slots[i].Weight;
@@ -373,6 +374,7 @@ public class AbilitySlot
     [SerializeField] private float cooldownOverride = -1f;
     [SerializeField] private bool runtimeAdded;
     private AttackCooldown runtimeCooldown;
+    private Func<float> timeProvider;
     #endregion
 
     #region Constructors
@@ -396,13 +398,18 @@ public class AbilitySlot
     #endregion
 
     #region Public Methods
-    public void Initialize()
+    public void Initialize(Func<float> timeProvider = null)
     {
+        if (timeProvider != null)
+        {
+            this.timeProvider = timeProvider;
+        }
+
         float cooldown = cooldownOverride >= 0f
             ? cooldownOverride
             : (ability != null ? ability.CooldownSeconds : 0f);
 
-        runtimeCooldown = new AttackCooldown(cooldown);
+        runtimeCooldown = new AttackCooldown(cooldown, this.timeProvider);
     }
 
     public bool IsReady()

@@ -8,11 +8,14 @@ public class PlayerAttack : MonoBehaviour
     [SerializeField] private WeaponBase equippedWeapon;
     [SerializeField] private PlayerAbilityController abilityController;
     [SerializeField] private PlayerMovement playerMovement;
+    [SerializeField] private bool allowAutoFire = true;
     private bool attackHeld;
-    private Vector2 attackInput;
     private Vector2 lastAttackDirection = Vector2.right;
     private global::InputSystem inputActions;
     private global::InputSystem.PlayerActions playerActions;
+    private InputAction fireAction;
+    private bool abilityAiming;
+    private int abilitySlotToUse = -1;
     #endregion
 
     #region Unity Methods
@@ -30,6 +33,8 @@ public class PlayerAttack : MonoBehaviour
         {
             playerMovement = GetComponent<PlayerMovement>();
         }
+
+        fireAction = new InputAction("Fire", InputActionType.Button, "<Keyboard>/space");
     }
 
     private void OnEnable()
@@ -37,6 +42,9 @@ public class PlayerAttack : MonoBehaviour
         playerActions.Enable();
         playerActions.Attack.performed += OnAttackAction;
         playerActions.Attack.canceled += OnAttackAction;
+
+        fireAction.Enable();
+        fireAction.performed += OnFireAction;
     }
 
     private void OnDisable()
@@ -44,12 +52,17 @@ public class PlayerAttack : MonoBehaviour
         playerActions.Attack.performed -= OnAttackAction;
         playerActions.Attack.canceled -= OnAttackAction;
         playerActions.Disable();
+
+        fireAction.performed -= OnFireAction;
+        fireAction.Disable();
     }
 
     private void OnDestroy()
     {
         playerActions.Disable();
         inputActions.Dispose();
+
+        fireAction?.Dispose();
     }
 
     private void Update()
@@ -66,11 +79,9 @@ public class PlayerAttack : MonoBehaviour
 
     public void SetAttackInput(Vector2 input)
     {
-        attackInput = input;
-
-        if (attackInput.sqrMagnitude > 0.001f)
+        if (input.sqrMagnitude > 0.001f)
         {
-            lastAttackDirection = attackInput.normalized;
+            lastAttackDirection = input.normalized;
         }
         abilityController?.SetAimDirection(lastAttackDirection);
         playerMovement?.SetAimDirection(lastAttackDirection);
@@ -81,8 +92,26 @@ public class PlayerAttack : MonoBehaviour
         return lastAttackDirection;
     }
 
+    public void BeginAbilityAim(int slotIndex)
+    {
+        abilityAiming = true;
+        abilitySlotToUse = slotIndex;
+        attackHeld = false; // stop weapon autofire while aiming abilities
+    }
+
+    public void CancelAbilityAim()
+    {
+        abilityAiming = false;
+        abilitySlotToUse = -1;
+    }
+
     public void TryAttack()
     {
+        if (abilityAiming)
+        {
+            return;
+        }
+
         if (equippedWeapon == null)
         {
             return;
@@ -102,6 +131,26 @@ public class PlayerAttack : MonoBehaviour
     {
         ProcessAttackContext(context);
     }
+
+    private void OnFireAction(InputAction.CallbackContext context)
+    {
+        if (context.phase == InputActionPhase.Performed)
+        {
+            if (abilityAiming)
+            {
+                if (abilitySlotToUse >= 0)
+                {
+                    abilityController?.TryUseAbilitySlot(abilitySlotToUse);
+                }
+
+                CancelAbilityAim();
+            }
+            else
+            {
+                TryAttack();
+            }
+        }
+    }
     #endregion
 
     #region Private Methods
@@ -112,12 +161,15 @@ public class PlayerAttack : MonoBehaviour
 
     private void HandleAttackInput()
     {
-        if (!attackHeld)
+        if (!allowAutoFire || abilityAiming)
         {
             return;
         }
 
-        TryAttack();
+        if (attackHeld)
+        {
+            TryAttack();
+        }
     }
 
     private void ProcessAttackContext(InputAction.CallbackContext context)

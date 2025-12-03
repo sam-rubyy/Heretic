@@ -1,0 +1,21 @@
+%YAML 1.1
+%TAG !u! tag:unity3d.com,2011:
+--- !u!114 &11400000
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: e28d5d2500338257789557960b708aa5, type: 3}
+  m_Name: RedPepperFlakes
+  m_EditorClassIdentifier: 
+  itemId: 9
+  displayName: Red Pepper Flakes
+  description: Ooh, Spicy!
+  icon: {fileID: 0}
+  additionalProjectiles: 2
+  spreadAngleBonus: 12
+  fireRatePenalty: -0.3

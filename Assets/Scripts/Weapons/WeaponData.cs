@@ -44,6 +44,13 @@ public struct BulletParams
 
     [Header("On Travel Effects")]
     public TravelEffectParams[] onTravelEffects;
+
+    [Header("Lightning")]
+    public ChainLightningParams chainLightning;
+
+    [Header("Visuals")]
+    public Color tint;
+    public bool overrideTint;
 }
 
 [System.Serializable]
@@ -64,4 +71,19 @@ public struct TravelEffectParams
     [Range(0f, 1f)] public float chance;
     public float tickInterval;
     public float intensity;
+}
+
+[System.Serializable]
+public struct ChainLightningParams
+{
+    [Tooltip("Enable chain lightning on hit.")]
+    public bool enabled;
+    [Tooltip("Damage dealt per chain jump. The first target is already damaged by the bullet itself.")]
+    public float damage;
+    [Tooltip("Number of additional targets the lightning can jump to.")]
+    public int maxBounces;
+    [Tooltip("Maximum distance to search for the next target.")]
+    public float range;
+    [Tooltip("Multiplier applied to damage after each bounce (e.g., 0.75 for falloff).")]
+    public float damageFalloff;
 }

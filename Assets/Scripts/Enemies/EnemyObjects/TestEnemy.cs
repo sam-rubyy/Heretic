@@ -30,6 +30,7 @@ public class TestEnemy : EnemyBase
     private Collider2D col;
     private float lastContactTime;
     private float lastPathTime;
+    private EnemyHealth cachedHealth;
     private List<Vector2> currentPath = new List<Vector2>();
     private int currentWaypoint;
     private Vector2 knockbackVelocity;
@@ -42,6 +43,7 @@ public class TestEnemy : EnemyBase
         body = GetComponent<Rigidbody2D>();
         spriteRenderer = GetComponent<SpriteRenderer>();
         col = GetComponent<Collider2D>();
+        cachedHealth = GetComponent<EnemyHealth>();
         agentClearance = (col != null ? Mathf.Max(col.bounds.extents.x, col.bounds.extents.y) : 0f) + Mathf.Max(0f, pathClearancePadding);
         if (abilityController == null)
         {
@@ -106,10 +108,13 @@ public class TestEnemy : EnemyBase
 
         UpdatePath();
         Vector2 moveDir = GetMoveDirection(distance, toTarget);
-        Vector2 nextPos = body.position + moveDir * moveSpeed * Time.fixedDeltaTime;
+        float speedMultiplier = cachedHealth != null ? cachedHealth.MoveSpeedMultiplier : 1f;
+        float adjustedSpeed = moveSpeed * speedMultiplier;
+
+        Vector2 nextPos = body.position + moveDir * adjustedSpeed * Time.fixedDeltaTime;
 
         body.MovePosition(nextPos);
-        body.velocity = moveDir * moveSpeed;
+        body.velocity = moveDir * adjustedSpeed;
 
         if (spriteRenderer != null && Mathf.Abs(moveDir.x) > 0.01f)
         {
@@ -261,6 +266,13 @@ public class TestEnemy : EnemyBase
         if (direction.sqrMagnitude < 0.0001f)
             direction = Vector2.right;
 
-        knockbackVelocity += direction.normalized * force;
+        // Replace accumulated knockback to prevent infinite stacking and clamp magnitude.
+        Vector2 newVelocity = direction.normalized * force;
+        float maxMagnitude = Mathf.Max(force, knockbackVelocity.magnitude);
+        knockbackVelocity = Vector2.ClampMagnitude(newVelocity, maxMagnitude);
+        if (body != null)
+        {
+            body.velocity = Vector2.zero; // stop pathing velocity while knocked back
+        }
     }
 }

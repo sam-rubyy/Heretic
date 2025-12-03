@@ -24,6 +24,11 @@ public class WeaponBase : MonoBehaviour
     #endregion
 
     #region Public Methods
+    public WeaponData GetWeaponData()
+    {
+        return weaponData;
+    }
+
     public virtual void Initialize(WeaponData data)
     {
         weaponData = data;
@@ -94,6 +99,19 @@ public class WeaponBase : MonoBehaviour
         attackCooldown?.Reset();
     }
 
+    public void BindOwner(ItemManager manager, PlayerStats stats)
+    {
+        if (manager != null)
+        {
+            itemManager = manager;
+        }
+
+        if (stats != null)
+        {
+            playerStats = stats;
+        }
+    }
+
     public bool CanFire()
     {
         if (isBursting)
@@ -110,7 +128,7 @@ public class WeaponBase : MonoBehaviour
     private void InitializeCooldown()
     {
         float cooldown = GetShotCooldownSeconds();
-        attackCooldown = new AttackCooldown(cooldown);
+        attackCooldown = new AttackCooldown(cooldown, BulletTimeRunner.GetPlayerTime);
     }
 
     private ShotParams GetModifiedShotParams(ShotParams baseParams)
@@ -191,7 +209,14 @@ public class WeaponBase : MonoBehaviour
             FireVolley(direction, shotParams, bulletParams);
             if (i < burstCount - 1 && interval > 0f)
             {
-                yield return new WaitForSeconds(interval);
+                if (BulletTimeRunner.UseUnscaledPlayerTime)
+                {
+                    yield return new WaitForSecondsRealtime(interval);
+                }
+                else
+                {
+                    yield return new WaitForSeconds(interval);
+                }
             }
         }
 

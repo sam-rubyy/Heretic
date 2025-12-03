@@ -16,6 +16,7 @@ public class Bullet : MonoBehaviour
     private BulletController controller;
     private Vector2 moveDirection = Vector2.right;
     private BulletOwner owner = BulletOwner.Neutral;
+    private Color baseColor = Color.white;
     #endregion
 
     #region Unity Methods
@@ -26,6 +27,11 @@ public class Bullet : MonoBehaviour
         {
             spriteRenderer = GetComponent<SpriteRenderer>();
         }
+
+        if (spriteRenderer != null)
+        {
+            baseColor = spriteRenderer.color;
+        }
     }
     #endregion
 
@@ -33,6 +39,7 @@ public class Bullet : MonoBehaviour
     public void Initialize(BulletParams parameters)
     {
         bulletParameters = parameters;
+        ApplyTint();
         ApplyOrientation(transform.right, false);
     }
 
@@ -44,6 +51,7 @@ public class Bullet : MonoBehaviour
             moveDirection = direction.normalized;
         }
 
+        ApplyTint();
         ApplyOrientation(moveDirection, true);
     }
 
@@ -61,6 +69,18 @@ public class Bullet : MonoBehaviour
     #endregion
 
     #region Private Methods
+    private void ApplyTint()
+    {
+        if (spriteRenderer == null)
+        {
+            return;
+        }
+
+        Color tint = bulletParameters.tint;
+        bool shouldTint = bulletParameters.overrideTint || tint.a > 0.0001f;
+        spriteRenderer.color = shouldTint ? tint : baseColor;
+    }
+
     private void ApplyOrientation(Vector2 direction, bool alignTransform)
     {
         if (direction.sqrMagnitude < 0.001f)

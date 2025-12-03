@@ -14,17 +14,22 @@ public class AreaDamageAbility : Ability
     #region Public Methods
     public override bool CanUse(AbilityContext context)
     {
+        if (radius <= 0f || damage <= 0f)
+        {
+            return false;
+        }
+
         if (!base.CanUse(context))
         {
             return false;
         }
 
-        if (!requireTargetInRange || context == null || context.Target == null)
+        if (requireTargetInRange && context?.Target != null)
         {
-            return true;
+            return context.DistanceToTarget <= radius;
         }
 
-        return context.DistanceToTarget <= radius;
+        return true;
     }
 
     public override void Activate(AbilityContext context)
@@ -41,33 +46,45 @@ public class AreaDamageAbility : Ability
         for (int i = 0; i < hits.Length; i++)
         {
             var hit = hits[i];
-            if (hit == null)
+            if (hit == null || hit.transform == context.UserTransform)
             {
                 continue;
             }
 
             if (userIsPlayer)
             {
-                var enemyHealth = hit.GetComponentInParent<EnemyHealth>();
-                if (enemyHealth == null)
-                {
-                    continue;
-                }
-
-                enemyHealth.TakeDamage(damage);
-                enemyHealth.ApplyKnockback(center, knockbackForce);
+                TryDamageEnemy(hit, center);
             }
             else
             {
-                var playerHealth = hit.GetComponentInParent<PlayerHealth>();
-                if (playerHealth == null)
-                {
-                    continue;
-                }
-
-                playerHealth.TakeDamage(Mathf.RoundToInt(damage), center, knockbackForce);
+                TryDamagePlayer(hit, center);
             }
         }
+    }
+    #endregion
+
+    #region Private Methods
+    private void TryDamageEnemy(Component hit, Vector2 source)
+    {
+        var enemyHealth = hit.GetComponentInParent<EnemyHealth>();
+        if (enemyHealth == null)
+        {
+            return;
+        }
+
+        enemyHealth.TakeDamage(damage);
+        enemyHealth.ApplyKnockback(source, knockbackForce);
+    }
+
+    private void TryDamagePlayer(Component hit, Vector2 source)
+    {
+        var playerHealth = hit.GetComponentInParent<PlayerHealth>();
+        if (playerHealth == null)
+        {
+            return;
+        }
+
+        playerHealth.TakeDamage(Mathf.RoundToInt(damage), source, knockbackForce);
     }
     #endregion
 }

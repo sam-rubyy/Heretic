@@ -14,7 +14,7 @@ public class ProjectileAbility : Ability
     #region Public Methods
     public override bool CanUse(AbilityContext context)
     {
-        if (requireTarget && (context == null || (context.Target == null && context.AimDirection.sqrMagnitude < 0.0001f)))
+        if (requireTarget && !HasAimOrTarget(context))
         {
             return false;
         }
@@ -29,8 +29,8 @@ public class ProjectileAbility : Ability
             return;
         }
 
-        Vector2 spawnPosition = context.UserPosition + spawnOffset;
-        Vector2 aimDirection = GetAimDirection(context, spawnPosition);
+        Vector2 aimDirection = GetAimDirection(context, context.UserPosition);
+        Vector2 spawnPosition = context.UserPosition + GetAimedOffset(aimDirection);
 
         Bullet bulletInstance = Instantiate(bulletPrefab, spawnPosition, Quaternion.identity);
         bulletInstance.Initialize(bulletParams, aimDirection);
@@ -71,6 +71,23 @@ public class ProjectileAbility : Ability
 
         direction = ApplySpread(direction.normalized);
         return direction.normalized;
+    }
+
+    private Vector2 GetAimedOffset(Vector2 aimDirection)
+    {
+        if (spawnOffset.sqrMagnitude <= 0.0001f)
+        {
+            return Vector2.zero;
+        }
+
+        var dir = aimDirection.sqrMagnitude > 0.0001f ? aimDirection.normalized : Vector2.right;
+        float angle = Mathf.Atan2(dir.y, dir.x);
+        float cos = Mathf.Cos(angle);
+        float sin = Mathf.Sin(angle);
+
+        float x = spawnOffset.x * cos - spawnOffset.y * sin;
+        float y = spawnOffset.x * sin + spawnOffset.y * cos;
+        return new Vector2(x, y);
     }
 
     private Vector2 ApplySpread(Vector2 direction)
