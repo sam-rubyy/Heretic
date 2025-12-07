@@ -5679,7 +5679,7 @@ MonoBehaviour:
   rollCount: 1
   preventDuplicateDrops: 1
   guaranteedDrops: []
-  dropPrefab: {fileID: 0}
+  dropPrefab: {fileID: 3090982599065905801, guid: 162629d21d595ad389e0101c802cd5b9, type: 3}
   dropScatter: {x: 0.75, y: 0.75}
 --- !u!1 &5172790086117389909
 GameObject:

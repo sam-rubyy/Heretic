@@ -5679,7 +5679,7 @@ MonoBehaviour:
   rollCount: 1
   preventDuplicateDrops: 1
   guaranteedDrops: []
-  dropPrefab: {fileID: 0}
+  dropPrefab: {fileID: 3090982599065905801, guid: 162629d21d595ad389e0101c802cd5b9, type: 3}
   dropScatter: {x: 0.75, y: 0.75}
 --- !u!1 &5172790086117389909
 GameObject:
@@ -6878,7 +6878,7 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: dcf7172988f4463a68687f24cf5f7a98, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
-  direction: 1
+  direction: 3
   triggerCollider: {fileID: 7611865888198414221}
   entryPoint: {fileID: 5529077833677562857}
   ownerRoom: {fileID: 4750492150497766888}

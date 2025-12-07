@@ -161,6 +161,6 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 41d094b5d53fa05e1a9becc7e18fed3a, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
-  item: {fileID: 0}
+  item: {fileID: 11400000, guid: dcc25c27efb16fdebb88904850c040af, type: 2}
   spriteRenderer: {fileID: 2385839369509831861}
   fallbackSprite: {fileID: 1622193599, guid: dd17d318ee4fa814492d8f85d2af3511, type: 3}

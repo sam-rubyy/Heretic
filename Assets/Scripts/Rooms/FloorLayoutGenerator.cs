@@ -37,6 +37,11 @@ public static class FloorLayoutGenerator
 
     public static GeneratedFloorLayout Generate(FloorConfig config, int seed)
     {
+        if (config.ForceStartToTreasureLayout)
+        {
+            return GenerateDebugStartToTreasureLayout(config);
+        }
+
         var rng = new System.Random(seed);
         var layout = new GeneratedFloorLayout();
 
@@ -50,6 +55,7 @@ public static class FloorLayoutGenerator
 
         layout.StartPosition = Vector2Int.zero;
         layout.BossPosition = mainPath[mainPath.Count - 1];
+        var forcedRoomTypes = AssignRequiredSpecialRooms(config, layout, rng);
 
         foreach (var kvp in layout.DepthByPosition)
         {
@@ -57,7 +63,7 @@ public static class FloorLayoutGenerator
             int depth = kvp.Value;
             var requiredDoors = GetRequiredDoors(layout, position);
 
-            RoomTemplate template = SelectTemplate(config, layout.BossPosition, position, depth, requiredDoors);
+            RoomTemplate template = SelectTemplate(config, layout.BossPosition, position, depth, requiredDoors, forcedRoomTypes);
             if (template == null)
             {
                 Debug.LogWarning($"No template matched at {position}; using start room as fallback.");
@@ -73,12 +79,46 @@ public static class FloorLayoutGenerator
         return layout;
     }
 
+    private static GeneratedFloorLayout GenerateDebugStartToTreasureLayout(FloorConfig config)
+    {
+        var layout = new GeneratedFloorLayout();
+        Vector2Int start = Vector2Int.zero;
+        Vector2Int treasure = Vector2Int.up;
+
+        layout.StartPosition = start;
+        layout.BossPosition = treasure;
+
+        layout.DepthByPosition[start] = 0;
+        layout.DepthByPosition[treasure] = 1;
+
+        foreach (var kvp in layout.DepthByPosition)
+        {
+            Vector2Int position = kvp.Key;
+            int depth = kvp.Value;
+            var requiredDoors = GetRequiredDoors(layout, position);
+
+            RoomTemplate template = position == start
+                ? config.StartRoom
+                : config.GetTreasureTemplate(requiredDoors, depth);
+
+            if (template == null)
+            {
+                Debug.LogWarning($"No template matched at {position}; using start room as fallback.");
+                template = config.StartRoom;
+            }
+
+            layout.Rooms[position] = template;
+        }
+
+        return layout;
+    }
+
     private static List<Vector2Int> BuildMainPath(FloorConfig config, System.Random rng)
     {
         var path = new List<Vector2Int> { Vector2Int.zero };
         var visited = new HashSet<Vector2Int> { Vector2Int.zero };
 
-        int minLength = Mathf.Max(2, config.MainPathLength.x);
+        int minLength = Mathf.Max(3, config.MainPathLength.x);
         int maxLength = Mathf.Max(minLength, config.MainPathLength.y);
         int targetLength = rng.Next(minLength, maxLength + 1);
 
@@ -157,7 +197,49 @@ public static class FloorLayoutGenerator
         }
     }
 
-    private static RoomTemplate SelectTemplate(FloorConfig config, Vector2Int bossPosition, Vector2Int position, int depth, RoomTemplate.DoorLayout requiredDoors)
+    private static Dictionary<Vector2Int, RoomType> AssignRequiredSpecialRooms(FloorConfig config, GeneratedFloorLayout layout, System.Random rng)
+    {
+        var forced = new Dictionary<Vector2Int, RoomType>();
+        var candidates = new List<Vector2Int>();
+        bool hasTreasure = config.HasRoomType(RoomType.Treasure);
+        bool hasShop = config.HasRoomType(RoomType.Shop);
+
+        foreach (var kvp in layout.DepthByPosition)
+        {
+            Vector2Int position = kvp.Key;
+            if (position == layout.StartPosition || position == layout.BossPosition)
+            {
+                continue;
+            }
+
+            candidates.Add(position);
+        }
+
+        Shuffle(candidates, rng);
+
+        if (hasTreasure && candidates.Count > 0)
+        {
+            forced[candidates[0]] = RoomType.Treasure;
+        }
+        else if (hasTreasure)
+        {
+            Debug.LogWarning("Could not place treasure room; not enough available positions.");
+        }
+
+        if (hasShop && candidates.Count > (hasTreasure ? 1 : 0))
+        {
+            int shopIndex = hasTreasure ? 1 : 0;
+            forced[candidates[shopIndex]] = RoomType.Shop;
+        }
+        else if (hasShop)
+        {
+            Debug.LogWarning("Could not place shop room; not enough available positions.");
+        }
+
+        return forced;
+    }
+
+    private static RoomTemplate SelectTemplate(FloorConfig config, Vector2Int bossPosition, Vector2Int position, int depth, RoomTemplate.DoorLayout requiredDoors, Dictionary<Vector2Int, RoomType> forcedRoomTypes)
     {
         if (position == Vector2Int.zero)
         {
@@ -167,6 +249,27 @@ public static class FloorLayoutGenerator
         if (config.BossRoom != null && position == bossPosition)
         {
             return config.BossRoom;
+        }
+
+        if (forcedRoomTypes != null && forcedRoomTypes.TryGetValue(position, out var forcedType))
+        {
+            RoomTemplate forcedTemplate = null;
+            switch (forcedType)
+            {
+                case RoomType.Treasure:
+                    forcedTemplate = config.GetTreasureTemplate(requiredDoors, depth);
+                    break;
+                case RoomType.Shop:
+                    forcedTemplate = config.GetShopTemplate(requiredDoors, depth);
+                    break;
+            }
+
+            if (forcedTemplate != null)
+            {
+                return forcedTemplate;
+            }
+
+            Debug.LogWarning($"No {forcedType} template matched at {position}; falling back to normal template.");
         }
 
         RoomTemplate template = config.GetRandomNormalTemplate(requiredDoors, depth);
@@ -187,5 +290,16 @@ public static class FloorLayoutGenerator
             south = layout.DepthByPosition.ContainsKey(position + Vector2Int.down),
             west = layout.DepthByPosition.ContainsKey(position + Vector2Int.left)
         };
+    }
+
+    private static void Shuffle<T>(List<T> list, System.Random rng)
+    {
+        for (int i = list.Count - 1; i > 0; i--)
+        {
+            int swapIndex = rng.Next(i + 1);
+            T temp = list[i];
+            list[i] = list[swapIndex];
+            list[swapIndex] = temp;
+        }
     }
 }

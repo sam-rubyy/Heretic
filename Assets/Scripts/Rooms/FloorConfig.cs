@@ -32,6 +32,9 @@ public class FloorConfig : ScriptableObject
     [SerializeField, Min(2)] private Vector2Int mainPathLength = new Vector2Int(4, 7);
     [SerializeField, Min(0)] private int maxBranches = 2;
     [SerializeField, Min(1)] private int branchLength = 1;
+    [Header("Debug/Testing")]
+    [SerializeField, Tooltip("If enabled, generation will only create the start room and a single treasure room directly north for quick traversal tests.")]
+    private bool forceStartToTreasureLayout = false;
 
     [Header("Enemies & Difficulty")]
     [SerializeField] private Vector2Int baseEnemyCountRange = new Vector2Int(2, 4);
@@ -48,6 +51,7 @@ public class FloorConfig : ScriptableObject
     public int BranchLength => Mathf.Max(1, branchLength);
     public RoomTemplate StartRoom => startRoom;
     public RoomTemplate BossRoom => bossRoom;
+    public bool ForceStartToTreasureLayout => forceStartToTreasureLayout;
     #endregion
 
     #region Public Methods
@@ -59,6 +63,39 @@ public class FloorConfig : ScriptableObject
     public RoomTemplate GetRandomSpecialTemplate(RoomTemplate.DoorLayout requiredDoors, int depth)
     {
         return GetWeightedTemplate(specialRooms, requiredDoors, depth);
+    }
+
+    public RoomTemplate GetTreasureTemplate(RoomTemplate.DoorLayout requiredDoors, int depth)
+    {
+        return GetWeightedTemplateByType(requiredDoors, depth, RoomType.Treasure);
+    }
+
+    public RoomTemplate GetShopTemplate(RoomTemplate.DoorLayout requiredDoors, int depth)
+    {
+        return GetWeightedTemplateByType(requiredDoors, depth, RoomType.Shop);
+    }
+
+    public bool HasRoomType(RoomType roomType)
+    {
+        for (int i = 0; i < normalRooms.Count; i++)
+        {
+            RoomTemplate template = normalRooms[i];
+            if (template != null && template.RoomType == roomType)
+            {
+                return true;
+            }
+        }
+
+        for (int i = 0; i < specialRooms.Count; i++)
+        {
+            RoomTemplate template = specialRooms[i];
+            if (template != null && template.RoomType == roomType)
+            {
+                return true;
+            }
+        }
+
+        return false;
     }
 
     public int GetEnemyCount(RoomTemplate template, int depth)
@@ -134,6 +171,36 @@ public class FloorConfig : ScriptableObject
     #endregion
 
     #region Private Methods
+    private RoomTemplate GetWeightedTemplateByType(RoomTemplate.DoorLayout requiredDoors, int depth, RoomType requiredType)
+    {
+        var pooled = new List<RoomTemplate>();
+
+        for (int i = 0; i < normalRooms.Count; i++)
+        {
+            RoomTemplate template = normalRooms[i];
+            if (template != null && template.RoomType == requiredType)
+            {
+                pooled.Add(template);
+            }
+        }
+
+        for (int i = 0; i < specialRooms.Count; i++)
+        {
+            RoomTemplate template = specialRooms[i];
+            if (template != null && template.RoomType == requiredType)
+            {
+                pooled.Add(template);
+            }
+        }
+
+        if (pooled.Count == 0)
+        {
+            return null;
+        }
+
+        return GetWeightedTemplate(pooled, requiredDoors, depth);
+    }
+
     private RoomTemplate GetWeightedTemplate(List<RoomTemplate> pool, RoomTemplate.DoorLayout requiredDoors, int depth)
     {
         var filtered = new List<RoomTemplate>();

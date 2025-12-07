@@ -14,7 +14,7 @@ GameObject:
   - component: {fileID: 3266692276748535647}
   - component: {fileID: 3090982599065905801}
   m_Layer: 0
-  m_Name: BottledLightning
+  m_Name: BloodiedPocketwatch
   m_TagString: Untagged
   m_Icon: {fileID: 0}
   m_NavMeshLayer: 0
@@ -161,6 +161,6 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 41d094b5d53fa05e1a9becc7e18fed3a, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
-  item: {fileID: 11400000, guid: b195ae3110c341eb891b39053b9e2f2e, type: 2}
+  item: {fileID: 11400000, guid: ab7227627a1d6be1094f45ae72efd338, type: 2}
   spriteRenderer: {fileID: 2385839369509831861}
   fallbackSprite: {fileID: 1622193599, guid: dd17d318ee4fa814492d8f85d2af3511, type: 3}

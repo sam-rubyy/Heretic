@@ -10,9 +10,9 @@ MonoBehaviour:
   m_Enabled: 1
   m_EditorHideFlags: 0
   m_Script: {fileID: 11500000, guid: 21c7130939978a1169c079fedcc09295, type: 3}
-  m_Name: ConnectorS
+  m_Name: 1x1NESW
   m_EditorClassIdentifier: 
-  roomPrefab: {fileID: -7854128992896943425, guid: b8401c99bb256a458ba2f935513b79a5, type: 3}
+  roomPrefab: {fileID: 4750492150497766888, guid: 94b26fdc0e39bc2a8b9cf62d2d9263ad, type: 3}
   roomType: 1
   doors:
     north: 1
