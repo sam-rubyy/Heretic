@@ -1,0 +1,32 @@
+%YAML 1.1
+%TAG !u! tag:unity3d.com,2011:
+--- !u!114 &11400000
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: d817071f8f672dbeea4dcb3e68657c89, type: 3}
+  m_Name: Floor1
+  m_EditorClassIdentifier: 
+  startRoom: {fileID: 11400000, guid: 5514e19ffa4585a42b911c8ed0156f1e, type: 2}
+  bossRoom: {fileID: 11400000, guid: d7121466780318d4e94c5151719430f4, type: 2}
+  normalRooms:
+  - {fileID: 11400000, guid: f874be54f75040e07a9f23f70f4cf0de, type: 2}
+  - {fileID: 11400000, guid: afe814dbe6258b413b14c9a7a86e7761, type: 2}
+  - {fileID: 11400000, guid: 2e5a64af21313fbb9b6378917fdf73d1, type: 2}
+  - {fileID: 11400000, guid: d7121466780318d4e94c5151719430f4, type: 2}
+  - {fileID: 11400000, guid: 3a3ed05ffa79ac2b4ad44145afd82576, type: 2}
+  specialRooms: []
+  mainPathLength: {x: 4, y: 7}
+  maxBranches: 2
+  branchLength: 1
+  baseEnemyCountRange: {x: 2, y: 4}
+  additionalEnemiesPerDepth: 0
+  bossEnemyCount: 1
+  baseDifficulty: 1
+  difficultyPerDepth: 0.5
+  enemyPool: []
