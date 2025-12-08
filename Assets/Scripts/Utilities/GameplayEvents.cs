@@ -9,6 +9,7 @@ public static class GameplayEvents
     public static event Action<EnemyBase, ItemBase> OnEnemyDroppedItem;
     public static event Action<ItemBase, GameObject> OnItemCollected;
     public static event Action<PlayerHealth> OnPlayerDied;
+    public static event Action<int> OnMoneyChanged;
     #endregion
 
     #region Public Methods
@@ -35,6 +36,11 @@ public static class GameplayEvents
     public static void RaisePlayerDied(PlayerHealth player)
     {
         OnPlayerDied?.Invoke(player);
+    }
+
+    public static void RaiseMoneyChanged(int currentMoney)
+    {
+        OnMoneyChanged?.Invoke(currentMoney);
     }
     #endregion
 }

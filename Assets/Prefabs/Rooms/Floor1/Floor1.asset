@@ -12,15 +12,16 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: d817071f8f672dbeea4dcb3e68657c89, type: 3}
   m_Name: Floor1
   m_EditorClassIdentifier: 
-  startRoom: {fileID: 11400000, guid: 5514e19ffa4585a42b911c8ed0156f1e, type: 2}
-  bossRoom: {fileID: 0}
+  startRoom: {fileID: 11400000, guid: 2dcbe737d5ced3265bd9281cc03331f9, type: 2}
+  bossRoom: {fileID: 11400000, guid: 92a471a167c29b844bc00608ddc7938e, type: 2}
   normalRooms:
-  - {fileID: 11400000, guid: ccb0cacfd241dca5fb83fcdd8f4eef1d, type: 2}
+  - {fileID: 11400000, guid: 96f342097c600b9e9b4c38a15e9d62a1, type: 2}
+  - {fileID: 11400000, guid: 26afaaceb96ef925d96b0b6477bad5b9, type: 2}
+  - {fileID: 11400000, guid: 294a56043f1c3769b9074ba89bad9c8b, type: 2}
+  - {fileID: 11400000, guid: a33bfd5a223ee13fea92c390fbd0eceb, type: 2}
   specialRooms:
-  - {fileID: 11400000, guid: 2e5a64af21313fbb9b6378917fdf73d1, type: 2}
-  - {fileID: 11400000, guid: d7121466780318d4e94c5151719430f4, type: 2}
-  - {fileID: 11400000, guid: afe814dbe6258b413b14c9a7a86e7761, type: 2}
-  - {fileID: 11400000, guid: f874be54f75040e07a9f23f70f4cf0de, type: 2}
+  - {fileID: 11400000, guid: 5fcf2f5169f2e8924b20a526545e9ea9, type: 2}
+  - {fileID: 11400000, guid: 13b06e8d23bc6a5e6ac358fee7253527, type: 2}
   mainPathLength: {x: 4, y: 7}
   maxBranches: 2
   branchLength: 1

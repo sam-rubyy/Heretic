@@ -10,32 +10,50 @@ public class RoomTemplate : ScriptableObject
     {
         [Tooltip("Door on the +Y side of the room.")]
         public bool north;
+        [Tooltip("Optional second door on the +Y side (for wider rooms).")]
+        public bool northSecondary;
         [Tooltip("Door on the +X side of the room.")]
         public bool east;
+        [Tooltip("Optional second door on the +X side (for wider rooms).")]
+        public bool eastSecondary;
         [Tooltip("Door on the -Y side of the room.")]
         public bool south;
+        [Tooltip("Optional second door on the -Y side (for wider rooms).")]
+        public bool southSecondary;
         [Tooltip("Door on the -X side of the room.")]
         public bool west;
+        [Tooltip("Optional second door on the -X side (for wider rooms).")]
+        public bool westSecondary;
 
         public bool HasDirection(DoorDirection direction)
         {
+            return GetDoorCount(direction) > 0;
+        }
+
+        public int GetDoorCount(DoorDirection direction)
+        {
             switch (direction)
             {
-                case DoorDirection.North: return north;
-                case DoorDirection.East: return east;
-                case DoorDirection.South: return south;
-                case DoorDirection.West: return west;
-                default: return false;
+                case DoorDirection.North: return CountDoors(north, northSecondary);
+                case DoorDirection.East: return CountDoors(east, eastSecondary);
+                case DoorDirection.South: return CountDoors(south, southSecondary);
+                case DoorDirection.West: return CountDoors(west, westSecondary);
+                default: return 0;
             }
         }
 
         public bool MatchesRequiredDoors(DoorLayout required)
         {
-            if (required.north && !north) return false;
-            if (required.east && !east) return false;
-            if (required.south && !south) return false;
-            if (required.west && !west) return false;
+            if (GetDoorCount(DoorDirection.North) < required.GetDoorCount(DoorDirection.North)) return false;
+            if (GetDoorCount(DoorDirection.East) < required.GetDoorCount(DoorDirection.East)) return false;
+            if (GetDoorCount(DoorDirection.South) < required.GetDoorCount(DoorDirection.South)) return false;
+            if (GetDoorCount(DoorDirection.West) < required.GetDoorCount(DoorDirection.West)) return false;
             return true;
+        }
+
+        private static int CountDoors(bool primary, bool secondary)
+        {
+            return (primary ? 1 : 0) + (secondary ? 1 : 0);
         }
     }
     #endregion

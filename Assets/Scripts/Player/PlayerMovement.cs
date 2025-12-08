@@ -22,7 +22,6 @@ public class PlayerMovement : MonoBehaviour
     private Vector2 movementInput;
     private Vector2 lastLookDirection = Vector2.right;
     private Vector2 lastAimDirection = Vector2.right;
-    private bool noInput;
 
     private Vector2 smoothedVelocity;
     private Vector2 smoothVelocityRef;
@@ -86,12 +85,8 @@ public class PlayerMovement : MonoBehaviour
 
     private void Update()
     {
-        noInput = movementInput == Vector2.zero;
-
         if (animator != null)
         {
-            //animator.SetBool("noInput", noInput);
-            // animator.SetFloat("Blend", movementInput.sqrMagnitude);
             if (!string.IsNullOrEmpty(speedParam))
             {
                 animator.SetFloat(speedParam, currentSpeed);

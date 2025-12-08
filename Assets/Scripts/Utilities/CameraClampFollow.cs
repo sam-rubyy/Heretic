@@ -12,10 +12,15 @@ public class CameraClampFollow : MonoBehaviour
     [SerializeField, Min(0f)] private float padding = 0.5f;
     [SerializeField] private bool autoFindPlayer = true;
     [SerializeField] private bool clampToActiveRoom = true;
+    [SerializeField, Tooltip("If the target has a Rigidbody2D, use its interpolated position to reduce jitter against walls.")]
+    private bool preferRigidbodyPosition = true;
+    [SerializeField, Tooltip("If true, snap directly to the clamped position instead of smoothing when at a boundary to avoid jitter.")]
+    private bool snapWhenClamped = true;
 
     private Camera cam;
     private Vector3 velocity;
     private readonly List<Collider2D> colliderBuffer = new List<Collider2D>(16);
+    private Rigidbody2D targetBody;
     #endregion
 
     #region Unity Methods
@@ -31,6 +36,8 @@ public class CameraClampFollow : MonoBehaviour
                 target = player.transform;
             }
         }
+
+        CacheTargetBody();
     }
 
     private void LateUpdate()
@@ -40,19 +47,47 @@ public class CameraClampFollow : MonoBehaviour
             return;
         }
 
-        Vector3 desired = target.position + offset;
-        if (clampToActiveRoom && TryGetActiveRoomBounds(out var bounds))
+        CacheTargetBody();
+        Vector3 targetPos = target.position;
+        if (preferRigidbodyPosition && targetBody != null)
         {
-            desired = ClampToBounds(desired, bounds);
+            // Rigidbody2D interpolation gives a smoother visual position when colliding.
+            targetPos = targetBody.position;
         }
 
-        transform.position = smoothTime > 0f
+        Vector3 desired = targetPos + offset;
+        bool clamped = false;
+        if (clampToActiveRoom && TryGetActiveRoomBounds(out var bounds))
+        {
+            desired = ClampToBounds(desired, bounds, out clamped);
+        }
+
+        // Avoid oscillation at the edges by clearing smoothing velocity when we hit a clamp.
+        if (clamped)
+        {
+            velocity = Vector3.zero;
+        }
+
+        transform.position = clamped && snapWhenClamped
+            ? desired
+            : smoothTime > 0f
             ? Vector3.SmoothDamp(transform.position, desired, ref velocity, smoothTime)
             : desired;
     }
     #endregion
 
     #region Private Methods
+    private void CacheTargetBody()
+    {
+        if (!preferRigidbodyPosition || target == null)
+        {
+            targetBody = null;
+            return;
+        }
+
+        target.TryGetComponent(out targetBody);
+    }
+
     private bool TryGetActiveRoomBounds(out Bounds bounds)
     {
         bounds = default;
@@ -89,8 +124,9 @@ public class CameraClampFollow : MonoBehaviour
         return hasBounds;
     }
 
-    private Vector3 ClampToBounds(Vector3 desired, Bounds bounds)
+    private Vector3 ClampToBounds(Vector3 desired, Bounds bounds, out bool clamped)
     {
+        clamped = false;
         if (!cam.orthographic)
         {
             return desired; // Only orthographic clamping is supported currently.
@@ -111,7 +147,9 @@ public class CameraClampFollow : MonoBehaviour
         }
         else
         {
+            float originalX = desired.x;
             desired.x = Mathf.Clamp(desired.x, minX, maxX);
+            clamped |= !Mathf.Approximately(originalX, desired.x);
         }
 
         if (minY > maxY)
@@ -120,7 +158,9 @@ public class CameraClampFollow : MonoBehaviour
         }
         else
         {
+            float originalY = desired.y;
             desired.y = Mathf.Clamp(desired.y, minY, maxY);
+            clamped |= !Mathf.Approximately(originalY, desired.y);
         }
 
         return desired;

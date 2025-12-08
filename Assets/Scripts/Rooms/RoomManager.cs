@@ -148,6 +148,7 @@ public class RoomManager : MonoBehaviour
             Vector3 worldPos = new Vector3(gridPosition.x * roomSpacing, gridPosition.y * roomSpacing, 0f);
             Room roomInstance = Instantiate(template.RoomPrefab, worldPos, Quaternion.identity, transform);
             roomInstance.Configure(template, activeFloor, currentLayout.GetDepth(gridPosition));
+            DeactivateAllDoors(roomInstance);
             roomInstance.gameObject.SetActive(false);
             generatedRooms[gridPosition] = roomInstance;
         }
@@ -285,6 +286,9 @@ public class RoomManager : MonoBehaviour
 
     private void ConnectGeneratedDoors()
     {
+        var doorGroupsCache = new Dictionary<int, Dictionary<Vector2Int, List<RoomDoor>>>();
+        var processedPairs = new HashSet<string>();
+
         foreach (var kvp in generatedRooms)
         {
             Vector2Int position = kvp.Key;
@@ -294,47 +298,37 @@ public class RoomManager : MonoBehaviour
                 continue;
             }
 
-            var doors = room.GetComponentsInChildren<RoomDoor>(true);
-            for (int i = 0; i < doors.Length; i++)
+            var groups = GetDoorGroups(room, doorGroupsCache);
+            foreach (var group in groups)
             {
-                var door = doors[i];
-                if (door == null)
+                Vector2Int offset = group.Key;
+                if (offset == Vector2Int.zero)
                 {
+                    DeactivateDoorGroup(group.Value);
                     continue;
                 }
 
-                Vector2Int neighborPos = position + door.Direction.ToVector();
+                Vector2Int neighborPos = position + offset;
                 if (!generatedRooms.TryGetValue(neighborPos, out var neighborRoom) || neighborRoom == null)
                 {
-                    door.SetLocked(true);
+                    DeactivateDoorGroup(group.Value);
                     continue;
                 }
 
-                var neighborDoor = FindDoor(neighborRoom, door.Direction.Opposite());
-                if (neighborDoor == null)
+                string pairKey = GetPairKey(position, neighborPos);
+                if (processedPairs.Contains(pairKey))
                 {
-                    door.SetLocked(true);
                     continue;
                 }
 
-                door.Connect(neighborDoor);
-                neighborDoor.Connect(door);
+                processedPairs.Add(pairKey);
+                var neighborGroups = GetDoorGroups(neighborRoom, doorGroupsCache);
+                Vector2Int reverseOffset = -offset;
+
+                neighborGroups.TryGetValue(reverseOffset, out var neighborDoors);
+                ConnectDoorSets(group.Value, neighborDoors, offset);
             }
         }
-    }
-
-    private RoomDoor FindDoor(Room room, DoorDirection direction)
-    {
-        var doors = room.GetComponentsInChildren<RoomDoor>(true);
-        for (int i = 0; i < doors.Length; i++)
-        {
-            if (doors[i].Direction == direction)
-            {
-                return doors[i];
-            }
-        }
-
-        return null;
     }
 
     private void MovePlayerTo(Vector3 position)
@@ -358,6 +352,164 @@ public class RoomManager : MonoBehaviour
         {
             cachedPlayer.transform.position = position;
         }
+    }
+    #endregion
+
+    #region Door Utilities
+    private static void DeactivateAllDoors(Room room)
+    {
+        var doors = room.GetComponentsInChildren<RoomDoor>(true);
+        for (int i = 0; i < doors.Length; i++)
+        {
+            DeactivateDoor(doors[i]);
+        }
+    }
+
+    private static Dictionary<Vector2Int, List<RoomDoor>> GetDoorGroups(Room room, Dictionary<int, Dictionary<Vector2Int, List<RoomDoor>>> cache)
+    {
+        int id = room != null ? room.GetInstanceID() : 0;
+        if (cache.TryGetValue(id, out var cached))
+        {
+            return cached;
+        }
+
+        var groups = new Dictionary<Vector2Int, List<RoomDoor>>();
+        var doors = room.GetComponentsInChildren<RoomDoor>(true);
+        for (int i = 0; i < doors.Length; i++)
+        {
+            var door = doors[i];
+            if (door == null)
+            {
+                continue;
+            }
+
+            Vector2Int offset = door.TargetOffset;
+            if (!groups.TryGetValue(offset, out var list))
+            {
+                list = new List<RoomDoor>();
+                groups[offset] = list;
+            }
+
+            list.Add(door);
+        }
+
+        cache[id] = groups;
+        return groups;
+    }
+
+    private static void ConnectDoorSets(List<RoomDoor> sourceDoors, List<RoomDoor> targetDoors, Vector2Int offset)
+    {
+        if (sourceDoors == null || sourceDoors.Count == 0)
+        {
+            return;
+        }
+
+        if (targetDoors == null || targetDoors.Count == 0)
+        {
+            DeactivateDoorGroup(sourceDoors);
+            return;
+        }
+
+        SortDoorsForPairing(sourceDoors, offset);
+        SortDoorsForPairing(targetDoors, -offset);
+
+        int pairCount = Mathf.Min(sourceDoors.Count, targetDoors.Count);
+        for (int i = 0; i < pairCount; i++)
+        {
+            var source = sourceDoors[i];
+            var target = targetDoors[i];
+            if (source == null || target == null)
+            {
+                continue;
+            }
+
+            ActivateDoor(source, true);
+            ActivateDoor(target, true);
+            source.Connect(target);
+            target.Connect(source);
+        }
+
+        if (sourceDoors.Count > pairCount)
+        {
+            for (int i = pairCount; i < sourceDoors.Count; i++)
+            {
+                DeactivateDoor(sourceDoors[i]);
+            }
+        }
+
+        if (targetDoors.Count > pairCount)
+        {
+            for (int i = pairCount; i < targetDoors.Count; i++)
+            {
+                DeactivateDoor(targetDoors[i]);
+            }
+        }
+    }
+
+    private static void SortDoorsForPairing(List<RoomDoor> doors, Vector2Int offset)
+    {
+        if (doors == null || doors.Count <= 1)
+        {
+            return;
+        }
+
+        bool sortByY = Mathf.Abs(offset.x) >= Mathf.Abs(offset.y);
+
+        doors.Sort((a, b) =>
+        {
+            if (a == null || b == null)
+            {
+                return 0;
+            }
+
+            float aValue = sortByY ? a.transform.position.y : a.transform.position.x;
+            float bValue = sortByY ? b.transform.position.y : b.transform.position.x;
+            return aValue.CompareTo(bValue);
+        });
+    }
+
+    private static void DeactivateDoorGroup(List<RoomDoor> doors)
+    {
+        if (doors == null)
+        {
+            return;
+        }
+
+        for (int i = 0; i < doors.Count; i++)
+        {
+            DeactivateDoor(doors[i]);
+        }
+    }
+
+    private static string GetPairKey(Vector2Int a, Vector2Int b)
+    {
+        bool aIsLower = a.x < b.x || (a.x == b.x && a.y <= b.y);
+        Vector2Int low = aIsLower ? a : b;
+        Vector2Int high = aIsLower ? b : a;
+        Vector2Int delta = high - low;
+        return $"{low.x},{low.y}-{high.x},{high.y}-{delta.x},{delta.y}";
+    }
+
+    private static void ActivateDoor(RoomDoor door, bool locked)
+    {
+        if (door == null)
+        {
+            return;
+        }
+
+        door.SetVisualsEnabled(true);
+        door.SetLocked(locked);
+    }
+
+    private static void DeactivateDoor(RoomDoor door)
+    {
+        if (door == null)
+        {
+            return;
+        }
+
+        door.SetLocked(true);
+        door.SetVisualsEnabled(false);
     }
     #endregion
 }

@@ -11,6 +11,10 @@ public class EnemyLootDropper : MonoBehaviour
     [SerializeField] private bool preventDuplicateDrops = true;
     [SerializeField] private ItemBase[] guaranteedDrops;
     [SerializeField] private DroppedItem dropPrefab;
+    [Header("Money Drops")]
+    [SerializeField, Tooltip("Chance that this enemy drops money.")] private float moneyDropChance = 0.4f;
+    [SerializeField, Tooltip("Min/Max money dropped when it happens.")] private Vector2Int moneyAmountRange = new Vector2Int(1, 3);
+    [SerializeField] private MoneyPickup moneyPickupPrefab;
     [SerializeField] private Vector2 dropScatter = new Vector2(0.75f, 0.75f);
     private EnemyBase owner;
     #endregion
@@ -69,6 +73,7 @@ public class EnemyLootDropper : MonoBehaviour
 
         NotifyDrops(drops);
         SpawnDrops(drops);
+        TryDropMoney();
         return drops;
     }
     #endregion
@@ -133,6 +138,30 @@ public class EnemyLootDropper : MonoBehaviour
             var dropInstance = Instantiate(dropPrefab, basePos + (Vector3)offset, Quaternion.identity);
             dropInstance.Initialize(drops[i]);
         }
+    }
+
+    private void TryDropMoney()
+    {
+        if (moneyPickupPrefab == null)
+        {
+            return;
+        }
+
+        if (Random.value > Mathf.Clamp01(moneyDropChance))
+        {
+            return;
+        }
+
+        int min = Mathf.Max(1, moneyAmountRange.x);
+        int max = Mathf.Max(min, moneyAmountRange.y);
+        int amount = Random.Range(min, max + 1);
+
+        Vector2 offset = new Vector2(
+            Random.Range(-dropScatter.x, dropScatter.x),
+            Random.Range(-dropScatter.y, dropScatter.y));
+
+        var money = Instantiate(moneyPickupPrefab, transform.position + (Vector3)offset, Quaternion.identity);
+        money.SetAmount(amount);
     }
     #endregion
 }

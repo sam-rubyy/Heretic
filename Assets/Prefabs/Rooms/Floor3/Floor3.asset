@@ -1,0 +1,28 @@
+%YAML 1.1
+%TAG !u! tag:unity3d.com,2011:
+--- !u!114 &11400000
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: d817071f8f672dbeea4dcb3e68657c89, type: 3}
+  m_Name: Floor3
+  m_EditorClassIdentifier: 
+  startRoom: {fileID: 0}
+  bossRoom: {fileID: 0}
+  normalRooms: []
+  specialRooms: []
+  mainPathLength: {x: 4, y: 7}
+  maxBranches: 2
+  branchLength: 1
+  forceStartToTreasureLayout: 0
+  baseEnemyCountRange: {x: 2, y: 4}
+  additionalEnemiesPerDepth: 0
+  bossEnemyCount: 1
+  baseDifficulty: 1
+  difficultyPerDepth: 0.5
+  enemyPool: []

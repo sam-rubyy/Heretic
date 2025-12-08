@@ -5,6 +5,7 @@ public class GeneratedFloorLayout
 {
     public readonly Dictionary<Vector2Int, RoomTemplate> Rooms = new Dictionary<Vector2Int, RoomTemplate>();
     public readonly Dictionary<Vector2Int, int> DepthByPosition = new Dictionary<Vector2Int, int>();
+    public readonly Dictionary<Vector2Int, RoomTemplate.DoorLayout> DoorMasks = new Dictionary<Vector2Int, RoomTemplate.DoorLayout>();
     public Vector2Int StartPosition { get; set; } = Vector2Int.zero;
     public Vector2Int BossPosition { get; set; } = Vector2Int.zero;
 
@@ -22,6 +23,18 @@ public class GeneratedFloorLayout
         }
 
         return 0;
+    }
+
+    public RoomTemplate.DoorLayout GetDoorMask(Vector2Int position)
+    {
+        DoorMasks.TryGetValue(position, out var mask);
+        return mask;
+    }
+
+    public int GetDoorCount(Vector2Int position, DoorDirection direction)
+    {
+        DoorMasks.TryGetValue(position, out var mask);
+        return mask.GetDoorCount(direction);
     }
 }
 
@@ -76,6 +89,7 @@ public static class FloorLayoutGenerator
             }
         }
 
+        AssignDoorMasks(layout);
         return layout;
     }
 
@@ -110,6 +124,7 @@ public static class FloorLayoutGenerator
             layout.Rooms[position] = template;
         }
 
+        AssignDoorMasks(layout);
         return layout;
     }
 
@@ -290,6 +305,58 @@ public static class FloorLayoutGenerator
             south = layout.DepthByPosition.ContainsKey(position + Vector2Int.down),
             west = layout.DepthByPosition.ContainsKey(position + Vector2Int.left)
         };
+    }
+
+    private static void AssignDoorMasks(GeneratedFloorLayout layout)
+    {
+        foreach (var kvp in layout.Rooms)
+        {
+            Vector2Int position = kvp.Key;
+            RoomTemplate template = kvp.Value;
+            var mask = new RoomTemplate.DoorLayout();
+
+            for (int i = 0; i < Directions.Length; i++)
+            {
+                DoorDirection direction = (DoorDirection)i;
+                Vector2Int neighborPos = position + Directions[i];
+
+                layout.Rooms.TryGetValue(neighborPos, out var neighborTemplate);
+
+                int availableHere = template != null ? template.Doors.GetDoorCount(direction) : 0;
+                int availableNeighbor = neighborTemplate != null ? neighborTemplate.Doors.GetDoorCount(direction.Opposite()) : 0;
+                int pairCount = Mathf.Min(availableHere, availableNeighbor);
+
+                SetMaskCount(ref mask, direction, pairCount);
+            }
+
+            layout.DoorMasks[position] = mask;
+        }
+    }
+
+    private static void SetMaskCount(ref RoomTemplate.DoorLayout mask, DoorDirection direction, int count)
+    {
+        bool primary = count >= 1;
+        bool secondary = count >= 2;
+
+        switch (direction)
+        {
+            case DoorDirection.North:
+                mask.north = primary;
+                mask.northSecondary = secondary;
+                break;
+            case DoorDirection.East:
+                mask.east = primary;
+                mask.eastSecondary = secondary;
+                break;
+            case DoorDirection.South:
+                mask.south = primary;
+                mask.southSecondary = secondary;
+                break;
+            case DoorDirection.West:
+                mask.west = primary;
+                mask.westSecondary = secondary;
+                break;
+        }
     }
 
     private static void Shuffle<T>(List<T> list, System.Random rng)
