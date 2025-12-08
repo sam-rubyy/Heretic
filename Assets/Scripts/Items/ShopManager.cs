@@ -79,7 +79,7 @@ public class ShopManager : MonoBehaviour
             }
 
             used?.Add(item);
-            int cost = Random.Range(Mathf.Max(0, randomCostRange.x), Mathf.Max(randomCostRange.x, randomCostRange.y) + 1);
+            int cost = UnityEngine.Random.Range(Mathf.Max(0, randomCostRange.x), Mathf.Max(randomCostRange.x, randomCostRange.y) + 1);
             stock.Add(new ShopEntry(item, cost));
         }
     }
@@ -96,7 +96,7 @@ public class ShopManager : MonoBehaviour
         // Simple retry loop to avoid duplicates if requested.
         for (int attempt = 0; attempt < itemPool.Count * 2; attempt++)
         {
-            var candidate = itemPool[Random.Range(0, itemPool.Count)];
+            var candidate = itemPool[UnityEngine.Random.Range(0, itemPool.Count)];
             if (candidate == null)
             {
                 continue;
