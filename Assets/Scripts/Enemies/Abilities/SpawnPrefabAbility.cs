@@ -56,6 +56,33 @@ public class SpawnPrefabAbility : Ability
             {
                 instance.transform.SetParent(context.UserTransform, worldPositionStays: true);
             }
+
+            InitializeSpawn(instance);
+        }
+    }
+    #endregion
+
+    #region Private Methods
+    private void InitializeSpawn(GameObject instance)
+    {
+        if (instance == null)
+        {
+            return;
+        }
+
+        // Ensure spawned allies/summons have health initialized.
+        var enemy = instance.GetComponent<EnemyBase>();
+        var health = instance.GetComponent<EnemyHealth>();
+
+        if (health != null)
+        {
+            health.ResetHealth();
+        }
+
+        if (enemy != null)
+        {
+            enemy.Initialize();
+            enemy.OnSpawned();
         }
     }
     #endregion

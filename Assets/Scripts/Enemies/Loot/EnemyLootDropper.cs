@@ -14,7 +14,8 @@ public class EnemyLootDropper : MonoBehaviour
     [Header("Money Drops")]
     [SerializeField, Tooltip("Chance that this enemy drops money.")] private float moneyDropChance = 0.4f;
     [SerializeField, Tooltip("Min/Max money dropped when it happens.")] private Vector2Int moneyAmountRange = new Vector2Int(1, 3);
-    [SerializeField] private MoneyPickup moneyPickupPrefab;
+    [SerializeField, Tooltip("Weighted coin prefabs to roll when dropping money.")] private List<MoneyDropOption> moneyDropOptions = new List<MoneyDropOption>();
+    [SerializeField, Tooltip("If true, overrides the prefab's amount with the random range.")] private bool overridePrefabAmount = true;
     [SerializeField] private Vector2 dropScatter = new Vector2(0.75f, 0.75f);
     private EnemyBase owner;
     #endregion
@@ -142,7 +143,7 @@ public class EnemyLootDropper : MonoBehaviour
 
     private void TryDropMoney()
     {
-        if (moneyPickupPrefab == null)
+        if (moneyDropOptions == null || moneyDropOptions.Count == 0)
         {
             return;
         }
@@ -160,8 +161,72 @@ public class EnemyLootDropper : MonoBehaviour
             Random.Range(-dropScatter.x, dropScatter.x),
             Random.Range(-dropScatter.y, dropScatter.y));
 
-        var money = Instantiate(moneyPickupPrefab, transform.position + (Vector3)offset, Quaternion.identity);
-        money.SetAmount(amount);
+        MoneyDropOption option = ChooseMoneyOption();
+        if (option == null || option.Prefab == null)
+        {
+            return;
+        }
+
+        var money = Instantiate(option.Prefab, transform.position + (Vector3)offset, Quaternion.identity);
+        if (overridePrefabAmount && money != null)
+        {
+            money.SetAmount(amount);
+        }
+    }
+
+    private MoneyDropOption ChooseMoneyOption()
+    {
+        float totalWeight = 0f;
+        for (int i = 0; i < moneyDropOptions.Count; i++)
+        {
+            var option = moneyDropOptions[i];
+            if (option == null || option.Prefab == null)
+            {
+                continue;
+            }
+
+            totalWeight += Mathf.Max(0f, option.Weight);
+        }
+
+        if (totalWeight <= 0f)
+        {
+            return null;
+        }
+
+        float roll = Random.value * totalWeight;
+        for (int i = 0; i < moneyDropOptions.Count; i++)
+        {
+            var option = moneyDropOptions[i];
+            if (option == null || option.Prefab == null)
+            {
+                continue;
+            }
+
+            float weight = Mathf.Max(0f, option.Weight);
+            if (weight <= 0f)
+            {
+                continue;
+            }
+
+            if (roll <= weight)
+            {
+                return option;
+            }
+
+            roll -= weight;
+        }
+
+        return null;
     }
     #endregion
+}
+
+[System.Serializable]
+public class MoneyDropOption
+{
+    [SerializeField] private MoneyPickup prefab;
+    [SerializeField, Min(0f)] private float weight = 1f;
+
+    public MoneyPickup Prefab => prefab;
+    public float Weight => weight;
 }

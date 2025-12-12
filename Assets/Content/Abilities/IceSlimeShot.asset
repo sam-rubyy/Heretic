@@ -1,0 +1,42 @@
+%YAML 1.1
+%TAG !u! tag:unity3d.com,2011:
+--- !u!114 &11400000
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 8b191c4223cc1f905bf8f06df1fe35da, type: 3}
+  m_Name: IceSlimeShot
+  m_EditorClassIdentifier: 
+  abilityId: 
+  cooldownSeconds: 2
+  useWeight: 1
+  minRange: 0
+  maxRange: 9999
+  bulletPrefab: {fileID: 4990963897180891873, guid: d2251d8fe6be2a33d9ea7760d72e2607, type: 3}
+  bulletParams:
+    damage: 1
+    speed: 1.5
+    lifetime: 10
+    knockback: 1.6
+    onHitEffects:
+    - effectId: slow
+      chance: 0.34
+      duration: 1
+      intensity: 1.5
+    onTravelEffects: []
+    chainLightning:
+      enabled: 0
+      damage: 0
+      maxBounces: 0
+      range: 0
+      damageFalloff: 0
+    tint: {r: 0, g: 0, b: 0, a: 0}
+    overrideTint: 0
+  spawnOffset: {x: 0, y: 0}
+  aimSpreadDegrees: 0
+  requireTarget: 1

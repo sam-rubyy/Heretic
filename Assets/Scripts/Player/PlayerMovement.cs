@@ -7,6 +7,7 @@ public class PlayerMovement : MonoBehaviour
 {
     [SerializeField] private float moveSpeed = 5f;
     [SerializeField] private Rigidbody2D body;
+    [SerializeField] private PlayerHealth playerHealth;
     [SerializeField] private float accelerationTime = 0.08f;
     [SerializeField] private float decelerationTime = 0.1f;
     [SerializeField] private float knockbackDamping = 12f;
@@ -41,6 +42,9 @@ public class PlayerMovement : MonoBehaviour
     {
         if (body == null)
             body = GetComponent<Rigidbody2D>();
+
+        if (playerHealth == null)
+            playerHealth = GetComponent<PlayerHealth>();
 
         animator = GetComponent<Animator>();
         spriteRenderer = GetComponent<SpriteRenderer>();
@@ -149,7 +153,8 @@ public class PlayerMovement : MonoBehaviour
             input = input.normalized;
 
         float smoothTime = input.sqrMagnitude > 0.001f ? accelerationTime : decelerationTime;
-        smoothedVelocity = Vector2.SmoothDamp(smoothedVelocity, input * moveSpeed, ref smoothVelocityRef, smoothTime, Mathf.Infinity, deltaTime);
+        float speedFactor = playerHealth != null ? playerHealth.GetMoveSpeedMultiplier() : 1f;
+        smoothedVelocity = Vector2.SmoothDamp(smoothedVelocity, input * moveSpeed * speedFactor, ref smoothVelocityRef, smoothTime, Mathf.Infinity, deltaTime);
 
         // Apply knockback decay
         knockbackVelocity = Vector2.MoveTowards(knockbackVelocity, Vector2.zero, knockbackDamping * deltaTime);

@@ -10,11 +10,18 @@ public class FireTrailEffect : MonoBehaviour
     [SerializeField] private float tickInterval = 0.25f;
     [SerializeField] private float damagePerTick = 1f;
     [SerializeField] private BulletOwner owner = BulletOwner.Neutral;
+    [Header("Visuals")]
+    [SerializeField] private SpriteRenderer spriteRenderer;
+    [SerializeField] private Sprite sprite;
+    [SerializeField] private Color color = new Color(1f, 0.55f, 0.2f, 0.4f);
+    [SerializeField] private string sortingLayer = "Effects";
+    [SerializeField] private int sortingOrder = 0;
     #endregion
 
     #region Unity Methods
     private void Start()
     {
+        SetupVisual();
         StartCoroutine(DamageRoutine());
     }
     #endregion
@@ -27,10 +34,39 @@ public class FireTrailEffect : MonoBehaviour
         lifetime = Mathf.Max(0.1f, life);
         radius = Mathf.Max(0.05f, effectRadius);
         owner = effectOwner;
+
+        SetupVisual();
     }
     #endregion
 
     #region Private Methods
+    private void SetupVisual()
+    {
+        if (spriteRenderer == null)
+        {
+            spriteRenderer = GetComponent<SpriteRenderer>();
+            if (spriteRenderer == null)
+            {
+                spriteRenderer = gameObject.AddComponent<SpriteRenderer>();
+            }
+        }
+
+        if (sprite != null || spriteRenderer.sprite == null)
+        {
+            spriteRenderer.sprite = sprite;
+        }
+        spriteRenderer.color = color;
+        if (!string.IsNullOrWhiteSpace(sortingLayer))
+        {
+            spriteRenderer.sortingLayerName = sortingLayer;
+        }
+        spriteRenderer.sortingOrder = sortingOrder;
+
+        // Match visual diameter to damage radius (assumes sprite is 1 unit wide in world space).
+        float diameter = radius * 2f;
+        transform.localScale = new Vector3(diameter, diameter, 1f);
+    }
+
     private IEnumerator DamageRoutine()
     {
         float elapsed = 0f;

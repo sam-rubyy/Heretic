@@ -7,6 +7,7 @@ public class RoomManager : MonoBehaviour
     #region Fields
     [SerializeField] private List<Room> rooms = new List<Room>();
     [SerializeField] private Room currentRoom;
+    [SerializeField, Tooltip("If true, automatically restart/run reset when the player dies. Disable to allow game over UI flow.")] private bool autoRestartOnPlayerDeath = false;
     [Header("Generation")]
     [SerializeField] private List<FloorConfig> floorConfigs = new List<FloorConfig>();
     [SerializeField] private int startingFloorIndex = 0;
@@ -207,6 +208,11 @@ public class RoomManager : MonoBehaviour
 
     private void HandlePlayerDied(PlayerHealth playerHealth)
     {
+        if (!autoRestartOnPlayerDeath)
+        {
+            return;
+        }
+
         playerHealth?.ResetHealth();
         RestartRun();
         MovePlayerToStartRoom();

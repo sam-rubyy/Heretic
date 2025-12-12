@@ -13,6 +13,8 @@ public class Bullet : MonoBehaviour
     #region Fields
     [SerializeField] private BulletParams bulletParameters;
     [SerializeField] private SpriteRenderer spriteRenderer;
+    [SerializeField] private Rigidbody2D body;
+    [SerializeField] private Collider2D hitbox;
     private BulletController controller;
     private Vector2 moveDirection = Vector2.right;
     private BulletOwner owner = BulletOwner.Neutral;
@@ -32,6 +34,36 @@ public class Bullet : MonoBehaviour
         {
             baseColor = spriteRenderer.color;
         }
+
+        // Ensure trigger-based collision and no physics forces push the bullet around.
+        if (body == null)
+        {
+            body = GetComponent<Rigidbody2D>();
+        }
+
+        if (body == null)
+        {
+            body = gameObject.AddComponent<Rigidbody2D>();
+        }
+
+        body.bodyType = RigidbodyType2D.Kinematic;
+        body.gravityScale = 0f;
+        body.velocity = Vector2.zero;
+        body.angularVelocity = 0f;
+        body.freezeRotation = true;
+        body.collisionDetectionMode = CollisionDetectionMode2D.Continuous;
+
+        if (hitbox == null)
+        {
+            hitbox = GetComponent<Collider2D>();
+        }
+
+        if (hitbox == null)
+        {
+            hitbox = gameObject.AddComponent<CircleCollider2D>();
+        }
+
+        hitbox.isTrigger = true;
     }
     #endregion
 

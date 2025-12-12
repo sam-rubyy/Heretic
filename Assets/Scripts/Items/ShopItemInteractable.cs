@@ -1,3 +1,4 @@
+using System.Collections.Generic;
 using UnityEngine;
 using TMPro;
 
@@ -6,10 +7,15 @@ using TMPro;
 public class ShopItemInteractable : MonoBehaviour
 {
     #region Fields
-    [SerializeField] private ShopManager shop;
-    [SerializeField, Min(0)] private int stockIndex;
+    [Header("Item Setup")]
+    [SerializeField] private ItemBase item;
+    [SerializeField, Tooltip("Pick a random item/cost at runtime.")] private bool randomizeOnAwake = true;
+    [SerializeField, Tooltip("Pool to pull from when randomizing.")] private List<ItemBase> lootPool = new List<ItemBase>();
+    [SerializeField, Min(0)] private int cost = 5;
+    [SerializeField, Tooltip("Inclusive min/max cost when randomizing.")] private Vector2Int randomCostRange = new Vector2Int(5, 15);
+    [SerializeField] private bool sold;
     [SerializeField] private TMP_Text promptText;
-    [SerializeField, Tooltip("Prompt format: {0} = item name, {1} = cost.")] private string promptFormat = "Press E to buy {0} ({1})";
+    [SerializeField, Tooltip("Prompt format: {0} = item name, {1} = cost or status.")] private string promptFormat = "Press E to buy {0} ({1})";
     [SerializeField] private GameObject promptRoot;
 
     private GameObject currentBuyer;
@@ -18,6 +24,11 @@ public class ShopItemInteractable : MonoBehaviour
     #region Unity Methods
     private void Awake()
     {
+        if (randomizeOnAwake || item == null)
+        {
+            RandomizeItem();
+        }
+
         if (promptText == null && promptRoot != null)
         {
             promptText = promptRoot.GetComponentInChildren<TMP_Text>();
@@ -52,14 +63,14 @@ public class ShopItemInteractable : MonoBehaviour
 
     private void Update()
     {
-        if (currentBuyer == null || shop == null)
+        if (currentBuyer == null)
         {
             return;
         }
 
         if (Input.GetKeyDown(KeyCode.E))
         {
-            if (shop.TryPurchase(stockIndex, currentBuyer))
+            if (TryPurchase(currentBuyer))
             {
                 SetPromptVisible(false);
             }
@@ -75,19 +86,13 @@ public class ShopItemInteractable : MonoBehaviour
     #region Private Methods
     private void RefreshPrompt()
     {
-        if (promptText == null || shop == null || stockIndex < 0 || stockIndex >= shop.Stock.Count)
+        if (promptText == null)
         {
             return;
         }
 
-        var entry = shop.Stock[stockIndex];
-        if (entry == null)
-        {
-            return;
-        }
-
-        string itemName = entry.Item != null ? entry.Item.DisplayName : "Item";
-        string costText = entry.Sold ? "Sold Out" : $"${entry.Cost}";
+        string itemName = item != null ? item.DisplayName : "Item";
+        string costText = sold ? "Sold Out" : $"${cost}";
         promptText.text = string.Format(promptFormat, itemName, costText);
     }
 
@@ -101,6 +106,57 @@ public class ShopItemInteractable : MonoBehaviour
         {
             promptText.gameObject.SetActive(visible);
         }
+    }
+
+    private void RandomizeItem()
+    {
+        if (lootPool == null || lootPool.Count == 0)
+        {
+            return;
+        }
+
+        // Try a few picks to avoid null entries.
+        for (int attempt = 0; attempt < lootPool.Count * 2; attempt++)
+        {
+            var candidate = lootPool[Random.Range(0, lootPool.Count)];
+            if (candidate == null)
+            {
+                continue;
+            }
+
+            item = candidate;
+            break;
+        }
+
+        int minCost = Mathf.Max(0, Mathf.Min(randomCostRange.x, randomCostRange.y));
+        int maxCostInclusive = Mathf.Max(randomCostRange.x, randomCostRange.y);
+        cost = Random.Range(minCost, maxCostInclusive + 1);
+        sold = false;
+        RefreshPrompt();
+    }
+
+    private bool TryPurchase(GameObject buyer)
+    {
+        if (sold || item == null || buyer == null)
+        {
+            return false;
+        }
+
+        var wallet = buyer.GetComponentInParent<PlayerWallet>();
+        if (wallet == null || !wallet.TrySpend(cost))
+        {
+            return false;
+        }
+
+        var itemManager = buyer.GetComponentInParent<ItemManager>();
+        if (itemManager != null)
+        {
+            itemManager.AddItem(item, buyer);
+        }
+
+        sold = true;
+        RefreshPrompt();
+        return true;
     }
     #endregion
 }

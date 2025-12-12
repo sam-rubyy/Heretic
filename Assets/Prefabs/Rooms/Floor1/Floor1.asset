@@ -22,13 +22,37 @@ MonoBehaviour:
   specialRooms:
   - {fileID: 11400000, guid: 5fcf2f5169f2e8924b20a526545e9ea9, type: 2}
   - {fileID: 11400000, guid: 13b06e8d23bc6a5e6ac358fee7253527, type: 2}
-  mainPathLength: {x: 4, y: 7}
-  maxBranches: 2
-  branchLength: 1
+  mainPathLength: {x: 6, y: 12}
+  maxBranches: 3
+  branchLength: 2
   forceStartToTreasureLayout: 0
-  baseEnemyCountRange: {x: 2, y: 4}
+  baseEnemyCountRange: {x: 5, y: 12}
   additionalEnemiesPerDepth: 0
   bossEnemyCount: 1
   baseDifficulty: 1
   difficultyPerDepth: 0.5
-  enemyPool: []
+  enemyPool:
+  - enemyPrefab: {fileID: 5464566797230419730, guid: 86acdbef4fc5b4bb4829b5866866a075, type: 3}
+    weight: 69
+    minDifficulty: 0
+    maxDifficulty: 9999
+  - enemyPrefab: {fileID: 5464566797230419730, guid: 1efa8e032a0ddb59d914fb4dab64da7e, type: 3}
+    weight: 25
+    minDifficulty: 0
+    maxDifficulty: 9999
+  - enemyPrefab: {fileID: 5464566797230419730, guid: e386444d22c383c08a6098eb87bdb99b, type: 3}
+    weight: 25
+    minDifficulty: 0
+    maxDifficulty: 9999
+  - enemyPrefab: {fileID: 5464566797230419730, guid: 5e43e406699746d74baeda21c0cc1922, type: 3}
+    weight: 10
+    minDifficulty: 0
+    maxDifficulty: 9999
+  - enemyPrefab: {fileID: 5464566797230419730, guid: 029feb77dd613c31caa1002e9c986caf, type: 3}
+    weight: 10
+    minDifficulty: 0
+    maxDifficulty: 99999
+  - enemyPrefab: {fileID: 5464566797230419730, guid: dda6bc41cdb702bfba7e5f6692983b82, type: 3}
+    weight: 1
+    minDifficulty: 0
+    maxDifficulty: 9999

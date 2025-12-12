@@ -1,4 +1,5 @@
 using System.Collections;
+using System.Collections.Generic;
 using UnityEngine;
 
 [DisallowMultipleComponent]
@@ -14,10 +15,18 @@ public class PlayerHealth : MonoBehaviour
     [SerializeField] private Color hitFlashColor = Color.red;
     [SerializeField] private float hitFlashDuration = 0.1f;
     [SerializeField] private SpriteRenderer[] renderers;
+    [Header("Game Over")]
+    [SerializeField, Tooltip("Shown when the player dies.")] private GameObject gameOverScreen;
+    [SerializeField, Tooltip("Pause the game when showing the game over screen.")] private bool pauseOnGameOver = true;
+    [SerializeField, Tooltip("Disable player control components on death.")] private bool disableControlOnDeath = true;
 
     public int Health => currentHealth;
     public int MaxHealth => maxHealth;
 
+    // Status effects
+    private readonly Dictionary<string, Coroutine> activeEffects = new Dictionary<string, Coroutine>();
+    private readonly Dictionary<string, float> speedFactors = new Dictionary<string, float>();
+    private float moveSpeedMultiplier = 1f;
 
     private Rigidbody2D body;
     private bool isDead;
@@ -77,6 +86,58 @@ public class PlayerHealth : MonoBehaviour
         currentHealth = maxHealth;
         isDead = false;
     }
+
+    public float GetMoveSpeedMultiplier()
+    {
+        return moveSpeedMultiplier;
+    }
+
+    public void ApplyStatusEffect(StatusEffectParams effectParams)
+    {
+        if (effectParams.duration <= 0f || effectParams.intensity <= 0f || string.IsNullOrWhiteSpace(effectParams.effectId))
+        {
+            return;
+        }
+
+        string id = effectParams.effectId.Trim().ToLowerInvariant();
+
+        if (activeEffects.TryGetValue(id, out var routine) && routine != null)
+        {
+            StopCoroutine(routine);
+        }
+
+        Coroutine newRoutine = null;
+        switch (id)
+        {
+            case "burn":
+            case "burning":
+                newRoutine = StartCoroutine(BurningEffect(effectParams));
+                break;
+            case "poison":
+                newRoutine = StartCoroutine(PoisonEffect(effectParams));
+                break;
+            case "regeneration":
+            case "regen":
+                newRoutine = StartCoroutine(RegenerationEffect(effectParams));
+                break;
+            case "slow":
+            case "slowed":
+                newRoutine = StartCoroutine(SlowedEffect(effectParams, slow: true));
+                break;
+            case "haste":
+                newRoutine = StartCoroutine(SlowedEffect(effectParams, slow: false));
+                break;
+            case "frozen":
+            case "freeze":
+                newRoutine = StartCoroutine(FrozenEffect(effectParams));
+                break;
+            default:
+                newRoutine = StartCoroutine(GenericDot(effectParams));
+                break;
+        }
+
+        activeEffects[id] = newRoutine;
+    }
     #endregion
 
     #region Private Methods
@@ -89,6 +150,8 @@ public class PlayerHealth : MonoBehaviour
 
         isDead = true;
         GameplayEvents.RaisePlayerDied(this);
+
+        TriggerGameOver();
     }
 
     private void ApplyKnockback(Vector2 sourcePosition, float force)
@@ -188,6 +251,157 @@ public class PlayerHealth : MonoBehaviour
         }
 
         flashRoutine = null;
+    }
+
+    private void OnDisable()
+    {
+        isInvulnerable = false;
+        invulRoutine = null;
+        flashRoutine = null;
+
+        foreach (var kvp in activeEffects)
+        {
+            if (kvp.Value != null)
+            {
+                StopCoroutine(kvp.Value);
+            }
+        }
+
+        activeEffects.Clear();
+        speedFactors.Clear();
+        moveSpeedMultiplier = 1f;
+    }
+
+    private void TriggerGameOver()
+    {
+        if (disableControlOnDeath)
+        {
+            var movement = GetComponent<PlayerMovement>();
+            if (movement != null)
+            {
+                movement.enabled = false;
+            }
+        }
+
+        if (gameOverScreen != null)
+        {
+            gameOverScreen.SetActive(true);
+        }
+
+        if (pauseOnGameOver)
+        {
+            Time.timeScale = 0f;
+        }
+    }
+
+    private IEnumerator GenericDot(StatusEffectParams effectParams)
+    {
+        string id = effectParams.effectId.Trim().ToLowerInvariant();
+        float elapsed = 0f;
+        float tick = 1f;
+        while (elapsed < effectParams.duration && currentHealth > 0)
+        {
+            TakeDamage(Mathf.RoundToInt(effectParams.intensity));
+            elapsed += tick;
+            yield return new WaitForSecondsRealtime(tick);
+        }
+
+        activeEffects.Remove(id);
+    }
+
+    private IEnumerator BurningEffect(StatusEffectParams effectParams)
+    {
+        string id = effectParams.effectId.Trim().ToLowerInvariant();
+        float elapsed = 0f;
+        float tick = 0.5f;
+        while (elapsed < effectParams.duration && currentHealth > 0)
+        {
+            TakeDamage(Mathf.RoundToInt(effectParams.intensity));
+            elapsed += tick;
+            yield return new WaitForSecondsRealtime(tick);
+        }
+
+        activeEffects.Remove(id);
+    }
+
+    private IEnumerator PoisonEffect(StatusEffectParams effectParams)
+    {
+        string id = effectParams.effectId.Trim().ToLowerInvariant();
+        float elapsed = 0f;
+        float tick = 0.75f;
+        while (elapsed < effectParams.duration && currentHealth > 0)
+        {
+            TakeDamage(Mathf.RoundToInt(effectParams.intensity * 0.75f + 0.25f));
+            elapsed += tick;
+            yield return new WaitForSecondsRealtime(tick);
+        }
+
+        activeEffects.Remove(id);
+    }
+
+    private IEnumerator RegenerationEffect(StatusEffectParams effectParams)
+    {
+        string id = effectParams.effectId.Trim().ToLowerInvariant();
+        float elapsed = 0f;
+        float tick = 1f;
+        while (elapsed < effectParams.duration)
+        {
+            Heal(Mathf.RoundToInt(effectParams.intensity));
+            elapsed += tick;
+            yield return new WaitForSecondsRealtime(tick);
+        }
+
+        activeEffects.Remove(id);
+    }
+
+    private IEnumerator SlowedEffect(StatusEffectParams effectParams, bool slow)
+    {
+        string id = effectParams.effectId.Trim().ToLowerInvariant();
+        string key = slow ? "slow" : "haste";
+        float factor = slow
+            ? Mathf.Clamp01(1f - effectParams.intensity)
+            : Mathf.Max(0.1f, 1f + effectParams.intensity);
+
+        AddSpeedFactor(key, factor);
+        yield return new WaitForSecondsRealtime(effectParams.duration);
+        RemoveSpeedFactor(key);
+        activeEffects.Remove(id);
+    }
+
+    private IEnumerator FrozenEffect(StatusEffectParams effectParams)
+    {
+        string id = effectParams.effectId.Trim().ToLowerInvariant();
+        const string key = "frozen";
+        AddSpeedFactor(key, 0f);
+        yield return new WaitForSecondsRealtime(effectParams.duration);
+        RemoveSpeedFactor(key);
+        activeEffects.Remove(id);
+    }
+
+    private void AddSpeedFactor(string key, float factor)
+    {
+        speedFactors[key] = factor;
+        RecalculateSpeedMultiplier();
+    }
+
+    private void RemoveSpeedFactor(string key)
+    {
+        if (speedFactors.ContainsKey(key))
+        {
+            speedFactors.Remove(key);
+            RecalculateSpeedMultiplier();
+        }
+    }
+
+    private void RecalculateSpeedMultiplier()
+    {
+        float value = 1f;
+        foreach (var factor in speedFactors.Values)
+        {
+            value *= factor;
+        }
+
+        moveSpeedMultiplier = Mathf.Clamp(value, 0f, 3f);
     }
     #endregion
 }

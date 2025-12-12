@@ -22,9 +22,17 @@ MonoBehaviour:
     damage: 10
     speed: 10
     lifetime: 10
-    knockback: 5
+    knockback: 2
     onHitEffects: []
     onTravelEffects: []
+    chainLightning:
+      enabled: 0
+      damage: 0
+      maxBounces: 0
+      range: 0
+      damageFalloff: 0
+    tint: {r: 0, g: 0, b: 0, a: 0}
+    overrideTint: 0
   spawnOffset: {x: 0, y: 0}
   aimSpreadDegrees: 0
   requireTarget: 0

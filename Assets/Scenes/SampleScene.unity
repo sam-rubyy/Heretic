@@ -275,6 +275,9 @@ MonoBehaviour:
   hitFlashColor: {r: 1, g: 0, b: 0, a: 1}
   hitFlashDuration: 0.1
   renderers: []
+  gameOverScreen: {fileID: 1884543982}
+  pauseOnGameOver: 1
+  disableControlOnDeath: 1
 --- !u!114 &96657926
 MonoBehaviour:
   m_ObjectHideFlags: 0
@@ -303,8 +306,9 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 8a45a652ec03b95e1949433b7a419e5b, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
-  moveSpeed: 9
+  moveSpeed: 3.5
   body: {fileID: 96657932}
+  playerHealth: {fileID: 96657925}
   accelerationTime: 0.08
   decelerationTime: 0.1
   knockbackDamping: 12
@@ -1549,6 +1553,7 @@ MonoBehaviour:
   m_EditorClassIdentifier: 
   rooms: []
   currentRoom: {fileID: 0}
+  autoRestartOnPlayerDeath: 0
   floorConfigs:
   - {fileID: 11400000, guid: 6b3420a86fb6b41fbaa7f157668225ea, type: 2}
   startingFloorIndex: 0
@@ -2436,9 +2441,9 @@ MonoBehaviour:
   m_OnClick:
     m_PersistentCalls:
       m_Calls:
-      - m_Target: {fileID: 0}
+      - m_Target: {fileID: 102900000, guid: 3d35a624703dc154d90d71303dbc95fa, type: 3}
         m_TargetAssemblyTypeName: PauseMenu, Assembly-CSharp
-        m_MethodName: Resume
+        m_MethodName: 
         m_Mode: 1
         m_Arguments:
           m_ObjectArgument: {fileID: 0}
@@ -2447,7 +2452,7 @@ MonoBehaviour:
           m_FloatArgument: 0
           m_StringArgument: 
           m_BoolArgument: 0
-        m_CallState: 2
+        m_CallState: 0
 --- !u!114 &1089570092
 MonoBehaviour:
   m_ObjectHideFlags: 0

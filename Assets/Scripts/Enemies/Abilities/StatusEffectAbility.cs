@@ -94,7 +94,8 @@ public class StatusEffectAbility : Ability
         }
 
         var enemyHealth = target.GetComponentInParent<EnemyHealth>();
-        if (enemyHealth == null)
+        var playerHealth = target.GetComponentInParent<PlayerHealth>();
+        if (enemyHealth == null && playerHealth == null)
         {
             return false;
         }
@@ -102,7 +103,15 @@ public class StatusEffectAbility : Ability
         float chance = Mathf.Clamp01(effect.chance);
         if (chance > 0f && Random.value <= chance)
         {
-            enemyHealth.ApplyStatusEffect(effect);
+            if (enemyHealth != null)
+            {
+                enemyHealth.ApplyStatusEffect(effect);
+            }
+
+            if (playerHealth != null)
+            {
+                playerHealth.ApplyStatusEffect(effect);
+            }
             return true;
         }
 
